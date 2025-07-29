@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Visualizer</title>
+    <link rel="stylesheet" href="src/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左エリア40% -->
+        <div class="left">
+            <div class="upload-section">
+                <h2>データ入力</h2>
+                
+                <!-- ファイルアップロード -->
+                <div class="input-group">
+                    <label for="file-upload">JSONファイルアップロード:</label>
+                    <input type="file" id="file-upload" accept=".json" class="file-input">
+                </div>
+                
+                <!-- テキスト入力 -->
+                <div class="input-group">
+                    <label for="log-input">または直接入力:</label>
+                    <textarea id="log-input" placeholder="JSONデータを入力してください..." rows="8"></textarea>
+                </div>
+                
+                <!-- Visualizeボタン -->
+                <button id="visualize-btn" class="button">Visualize</button>
+                
+                <!-- エラーメッセージ -->
+                <div id="error-message" class="error" style="display: none;"></div>
+            </div>
+            
+            <!-- インサイト表示 -->
+            <div class="insights-section">
+                <h3>インサイト</h3>
+                <div id="insights-list" class="list">
+                    <p>データを視覚化するとインサイトが表示されます</p>
+                </div>
+                
+                <!-- Export Insightsボタン -->
+                <button id="export-btn" class="button">Export</button>
+            </div>
+        </div>
+        
+        <!-- 右エリア60% -->
+        <div class="right">
+            <div class="chart-section">
+                <h2 id="chart-label">ワークフロー視覚化</h2>
+                <div class="chart">
+                    <canvas id="workflowChart" width="400" height="300"></canvas>
+                </div>
+                
+                <!-- チャート説明 -->
+                <div class="chart-info">
+                    <p>🔴 赤色: エラーが発生したステップです</p>
+                    <p>📊 バブルサイズ: 試行回数を表しています</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- スクリーンリーダー用 -->
+    <div class="sr-only" aria-live="polite" id="status-message"></div>
+    
+    <script src="src/script.js"></script>
+</body>
+</html>
