@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セルラーオートマトン拡張シミュレーター - Cellular Automaton Extended Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .input-row label {
+            min-width: 90px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+
+        .input-row input, .input-row select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 3px;
+            width: calc(50% - 6px);
+        }
+
+        .btn-full {
+            width: calc(100% - 6px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .simulation-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #ca-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            image-rendering: pixelated;
+        }
+
+        .stats-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 220px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .stats-overlay h4 {
+            margin-bottom: 10px;
+            color: #f39c12;
+        }
+
+        .stats-overlay .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .rule-editor {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .neighbor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            margin: 10px 0;
+        }
+
+        .neighbor-cell {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #bdc3c7;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .neighbor-cell.alive {
+            background: #27ae60;
+            color: white;
+        }
+
+        .neighbor-cell.dead {
+            background: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .pattern-analysis {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .generation-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .wolfram-rules {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .wolfram-rule {
+            text-align: center;
+            padding: 5px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .wolfram-rule:hover {
+            background: #ecf0f1;
+        }
+
+        .wolfram-rule.selected {
+            background: #3498db;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .control-panel {
+                max-height: 250px;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧬 セルラーオートマトン拡張シミュレーター</h1>
+            <p>Conway生命ゲーム・Wolframルール・カスタムパターン解析</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>🎮 シミュレーション制御</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" onclick="startSimulation()">▶️ 開始</button>
+                    <button class="btn btn-secondary" onclick="pauseSimulation()">⏸️ 停止</button>
+                    <button class="btn btn-primary" onclick="stepSimulation()">⏭️ 1世代</button>
+                    <button class="btn btn-danger" onclick="resetSimulation()">🔄 リセット</button>
+                </div>
+                <div class="input-row">
+                    <label>速度:</label>
+                    <input type="range" id="speed" min="10" max="1000" step="10" value="100">
+                    <span id="speedValue">100ms</span>
+                </div>
+                <div class="input-row">
+                    <label>世代:</label>
+                    <input type="range" id="generationSlider" min="0" max="1000" value="0" class="generation-slider">
+                    <span id="generationValue">0</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🏗️ グリッド設定</h3>
+                <div class="input-row">
+                    <label>サイズ:</label>
+                    <select id="gridSize">
+                        <option value="64">64x64</option>
+                        <option value="128" selected>128x128</option>
+                        <option value="256">256x256</option>
+                        <option value="512">512x512</option>
+                    </select>
+                </div>
+                <div class="control-buttons">
+                    <button class="btn btn-secondary" onclick="randomizeGrid()">🎲 ランダム</button>
+                    <button class="btn btn-secondary" onclick="clearGrid()">🗑️ クリア</button>
+                </div>
+                <div class="input-row">
+                    <label>密度:</label>
+                    <input type="range" id="density" min="0.1" max="0.9" step="0.1" value="0.3">
+                    <span id="densityValue">30%</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>⚙️ ルールセット</h3>
+                <div class="input-row">
+                    <label>タイプ:</label>
+                    <select id="ruleType" onchange="changeRuleType()">
+                        <option value="conway">Conway生命ゲーム</option>
+                        <option value="wolfram">Wolframコード</option>
+                        <option value="custom">カスタムルール</option>
+                    </select>
+                </div>
+                
+                <div id="conwayRules" class="rule-editor">
+                    <div class="input-row">
+                        <label>生存:</label>
+                        <input type="text" id="survivalRules" value="2,3" placeholder="2,3">
+                    </div>
+                    <div class="input-row">
+                        <label>誕生:</label>
+                        <input type="text" id="birthRules" value="3" placeholder="3">
+                    </div>
+                </div>
+
+                <div id="wolframRules" class="rule-editor" style="display: none;">
+                    <div class="input-row">
+                        <label>コード:</label>
+                        <input type="number" id="wolframCode" min="0" max="255" value="30">
+                    </div>
+                    <div class="wolfram-rules" id="wolframDisplay">
+                        <!-- Wolfram rule visualization will be inserted here -->
+                    </div>
+                </div>
+
+                <div id="customRules" class="rule-editor" style="display: none;">
+                    <label>近傍パターン（中央セルの次状態）:</label>
+                    <div class="neighbor-grid" id="neighborGrid">
+                        <!-- 3x3 grid for custom rule editing -->
+                    </div>
+                    <div class="input-row">
+                        <label>結果:</label>
+                        <select id="customResult">
+                            <option value="0">死</option>
+                            <option value="1">生</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🎨 プリセットパターン</h3>
+                <div class="preset-grid">
+                    <button class="preset-btn" onclick="loadPreset('glider')">グライダー</button>
+                    <button class="preset-btn" onclick="loadPreset('oscillator')">振動子</button>
+                    <button class="preset-btn" onclick="loadPreset('gun')">グライダー銃</button>
+                    <button class="preset-btn" onclick="loadPreset('pulsar')">パルサー</button>
+                    <button class="preset-btn" onclick="loadPreset('beehive')">蜂の巣</button>
+                    <button class="preset-btn" onclick="loadPreset('toad')">ヒキガエル</button>
+                    <button class="preset-btn" onclick="loadPreset('beacon')">ビーコン</button>
+                    <button class="preset-btn" onclick="loadPreset('pentomino')">ペントミノ</button>
+                    <button class="preset-btn" onclick="loadPreset('acorn')">どんぐり</button>
+                    <button class="preset-btn" onclick="loadPreset('diehard')">ダイハード</button>
+                    <button class="preset-btn" onclick="loadPreset('methuselah')">メトセラ</button>
+                    <button class="preset-btn" onclick="loadPreset('spaceship')">宇宙船</button>
+                    <button class="preset-btn" onclick="loadPreset('garden')">エデンの園</button>
+                    <button class="preset-btn" onclick="loadPreset('maze')">迷路</button>
+                    <button class="preset-btn" onclick="loadPreset('coral')">サンゴ</button>
+                    <button class="preset-btn" onclick="loadPreset('forest')">森林火災</button>
+                    <button class="preset-btn" onclick="loadPreset('brian')">ブライアンの脳</button>
+                    <button class="preset-btn" onclick="loadPreset('wireworld')">ワイヤーワールド</button>
+                    <button class="preset-btn" onclick="loadPreset('langton')">ラングトンのアリ</button>
+                    <button class="preset-btn" onclick="loadPreset('cyclic')">サイクリック</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>📊 パターン解析</h3>
+                <div class="pattern-analysis" id="patternAnalysis">
+                    <strong>パターンタイプ:</strong> <span id="patternType">未解析</span><br>
+                    <strong>安定度:</strong> <span id="stability">計算中</span><br>
+                    <strong>周期:</strong> <span id="period">-</span><br>
+                    <strong>複雑度:</strong> <span id="complexity">-</span>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="analyzePattern()">🔍 パターン解析実行</button>
+            </div>
+
+            <div class="control-group">
+                <h3>💾 データ管理</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-secondary" onclick="saveState()">💾 保存</button>
+                    <button class="btn btn-secondary" onclick="loadState()">📁 読込</button>
+                    <button class="btn btn-primary" onclick="exportData()">📤 エクスポート</button>
+                    <button class="btn btn-primary" onclick="importData()">📥 インポート</button>
+                </div>
+                <input type="file" id="fileInput" style="display: none;" accept=".json,.ca" onchange="handleFileImport(event)">
+            </div>
+        </div>
+
+        <div class="simulation-area">
+            <canvas id="ca-canvas"></canvas>
+            
+            <div class="stats-overlay">
+                <h4>📈 統計情報</h4>
+                <div class="stat-row">
+                    <span>世代数:</span>
+                    <span id="generationCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>生きているセル:</span>
+                    <span id="aliveCells">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>人口密度:</span>
+                    <span id="population">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span>変化率:</span>
+                    <span id="changeRate">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span>更新速度:</span>
+                    <span id="updateRate">0 gen/s</span>
+                </div>
+                <div class="stat-row">
+                    <span>パフォーマンス:</span>
+                    <span id="performance">60 fps</span>
+                </div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="zoomOut()">-</button>
+                <button class="zoom-btn" onclick="resetZoom()">🔄</button>
+                <button class="zoom-btn" onclick="togglePan()" id="panBtn">✋</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // セルラーオートマトン拡張シミュレーター - メインクラス
+        class CellularAutomatonSimulator {
+            constructor() {
+                this.canvas = document.getElementById('ca-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.size = 128;
+                this.grid = [];
+                this.nextGrid = [];
+                this.generation = 0;
+                this.isRunning = false;
+                this.animationId = null;
+                this.lastUpdate = 0;
+                this.updateInterval = 100;
+                
+                // 表示制御
+                this.zoom = 1;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.isPanning = false;
+                this.lastMouseX = 0;
+                this.lastMouseY = 0;
+                
+                // ルール設定
+                this.ruleType = 'conway';
+                this.survivalRules = [2, 3];
+                this.birthRules = [3];
+                this.wolframCode = 30;
+                this.customRules = new Map();
+                
+                // パターン解析用
+                this.history = [];
+                this.maxHistory = 100;
+                this.patternStable = false;
+                this.patternPeriod = 0;
+                
+                // プリセットパターン定義
+                this.presets = this.initializePresets();
+                
+                this.initializeCanvas();
+                this.initializeGrid();
+                this.setupEventListeners();
+                this.setupWolframDisplay();
+                this.setupCustomRuleEditor();
+                this.render();
+            }
+
+            initializeCanvas() {
+                const resizeCanvas = () => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.canvas.width = rect.width;
+                    this.canvas.height = rect.height;
+                    this.render();
+                };
+                
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+            }
+
+            initializeGrid() {
+                this.size = parseInt(document.getElementById('gridSize').value);
+                this.grid = Array(this.size).fill().map(() => Array(this.size).fill(0));
+                this.nextGrid = Array(this.size).fill().map(() => Array(this.size).fill(0));
+                this.generation = 0;
+                this.history = [];
+                this.updateGenerationSlider();
+            }
+
+            setupEventListeners() {
+                // スライダーイベント
+                document.getElementById('speed').addEventListener('input', (e) => {
+                    this.updateInterval = parseInt(e.target.value);
+                    document.getElementById('speedValue').textContent = `${e.target.value}ms`;
+                });
+                
+                document.getElementById('density').addEventListener('input', (e) => {
+                    document.getElementById('densityValue').textContent = `${Math.round(e.target.value * 100)}%`;
+                });
+                
+                document.getElementById('generationSlider').addEventListener('input', (e) => {
+                    this.jumpToGeneration(parseInt(e.target.value));
+                });
+                
+                // グリッドサイズ変更
+                document.getElementById('gridSize').addEventListener('change', () => {
+                    this.initializeGrid();
+                    this.render();
+                });
+                
+                // Canvas マウスイベント
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+                this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+                
+                // ルール変更イベント
+                document.getElementById('survivalRules').addEventListener('input', () => this.updateConwayRules());
+                document.getElementById('birthRules').addEventListener('input', () => this.updateConwayRules());
+                document.getElementById('wolframCode').addEventListener('input', () => this.updateWolframCode());
+            }
+
+            setupWolframDisplay() {
+                const display = document.getElementById('wolframDisplay');
+                for (let i = 7; i >= 0; i--) {
+                    const rule = document.createElement('div');
+                    rule.className = 'wolfram-rule';
+                    rule.textContent = this.binaryToPattern(i);
+                    rule.onclick = () => this.selectWolframRule(i);
+                    display.appendChild(rule);
+                }
+                this.updateWolframDisplay();
+            }
+
+            setupCustomRuleEditor() {
+                const grid = document.getElementById('neighborGrid');
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'neighbor-cell dead';
+                    cell.textContent = '0';
+                    cell.onclick = () => this.toggleNeighborCell(i);
+                    grid.appendChild(cell);
+                }
+            }
+
+            binaryToPattern(num) {
+                const patterns = ['000', '001', '010', '011', '100', '101', '110', '111'];
+                return patterns[num];
+            }
+
+            updateWolframDisplay() {
+                const code = parseInt(document.getElementById('wolframCode').value);
+                const rules = document.querySelectorAll('.wolfram-rule');
+                
+                for (let i = 0; i < 8; i++) {
+                    const bit = (code >> i) & 1;
+                    rules[7-i].classList.toggle('selected', bit === 1);
+                }
+            }
+
+            toggleNeighborCell(index) {
+                const cell = document.querySelectorAll('.neighbor-cell')[index];
+                const isAlive = cell.classList.contains('alive');
+                
+                if (isAlive) {
+                    cell.classList.remove('alive');
+                    cell.classList.add('dead');
+                    cell.textContent = '0';
+                } else {
+                    cell.classList.remove('dead');
+                    cell.classList.add('alive');
+                    cell.textContent = '1';
+                }
+            }
+
+            updateConwayRules() {
+                const survival = document.getElementById('survivalRules').value;
+                const birth = document.getElementById('birthRules').value;
+                
+                this.survivalRules = survival.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+                this.birthRules = birth.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+            }
+
+            updateWolframCode() {
+                this.wolframCode = parseInt(document.getElementById('wolframCode').value);
+                this.updateWolframDisplay();
+            }
+
+            handleMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (document.getElementById('panBtn').textContent === '👆') {
+                    this.isPanning = true;
+                    this.lastMouseX = x;
+                    this.lastMouseY = y;
+                } else {
+                    this.toggleCell(x, y);
+                }
+            }
+
+            handleMouseMove(e) {
+                if (!this.isPanning) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                this.offsetX += (x - this.lastMouseX) / this.zoom;
+                this.offsetY += (y - this.lastMouseY) / this.zoom;
+                
+                this.lastMouseX = x;
+                this.lastMouseY = y;
+                this.render();
+            }
+
+            handleMouseUp() {
+                this.isPanning = false;
+            }
+
+            handleWheel(e) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                this.zoom = Math.max(0.1, Math.min(10, this.zoom * delta));
+                this.render();
+            }
+
+            toggleCell(x, y) {
+                const cellSize = Math.min(this.canvas.width, this.canvas.height) / this.size * this.zoom;
+                const startX = (this.canvas.width - this.size * cellSize) / 2 + this.offsetX * this.zoom;
+                const startY = (this.canvas.height - this.size * cellSize) / 2 + this.offsetY * this.zoom;
+                
+                const col = Math.floor((x - startX) / cellSize);
+                const row = Math.floor((y - startY) / cellSize);
+                
+                if (row >= 0 && row < this.size && col >= 0 && col < this.size) {
+                    this.grid[row][col] = 1 - this.grid[row][col];
+                    this.render();
+                }
+            }
+
+            randomizeGrid() {
+                const density = parseFloat(document.getElementById('density').value);
+                
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        this.grid[row][col] = Math.random() < density ? 1 : 0;
+                    }
+                }
+                
+                this.generation = 0;
+                this.history = [];
+                this.updateGenerationSlider();
+                this.render();
+            }
+
+            clearGrid() {
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        this.grid[row][col] = 0;
+                    }
+                }
+                
+                this.generation = 0;
+                this.history = [];
+                this.updateGenerationSlider();
+                this.render();
+            }
+
+            update() {
+                // 現在の状態を履歴に保存
+                this.saveToHistory();
+                
+                // ルールに基づいて次世代を計算
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        this.nextGrid[row][col] = this.applyRule(row, col);
+                    }
+                }
+                
+                // グリッドを更新
+                [this.grid, this.nextGrid] = [this.nextGrid, this.grid];
+                this.generation++;
+                
+                this.updateGenerationSlider();
+                this.updateStats();
+                this.render();
+            }
+
+            applyRule(row, col) {
+                const current = this.grid[row][col];
+                
+                switch (this.ruleType) {
+                    case 'conway':
+                        return this.applyConwayRule(row, col, current);
+                    case 'wolfram':
+                        return this.applyWolframRule(row, col);
+                    case 'custom':
+                        return this.applyCustomRule(row, col);
+                    default:
+                        return current;
+                }
+            }
+
+            applyConwayRule(row, col, current) {
+                const neighbors = this.countNeighbors(row, col);
+                
+                if (current === 1) {
+                    return this.survivalRules.includes(neighbors) ? 1 : 0;
+                } else {
+                    return this.birthRules.includes(neighbors) ? 1 : 0;
+                }
+            }
+
+            applyWolframRule(row, col) {
+                // 1Dセルラーオートマトンとして最上行に適用
+                if (row === 0) {
+                    const left = this.grid[row][(col - 1 + this.size) % this.size];
+                    const center = this.grid[row][col];
+                    const right = this.grid[row][(col + 1) % this.size];
+                    
+                    const pattern = (left << 2) | (center << 1) | right;
+                    return (this.wolframCode >> pattern) & 1;
+                } else {
+                    return this.grid[row - 1][col];
+                }
+            }
+
+            applyCustomRule(row, col) {
+                // カスタムルールの実装（簡略版）
+                return this.applyConwayRule(row, col, this.grid[row][col]);
+            }
+
+            countNeighbors(row, col) {
+                let count = 0;
+                
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        
+                        const newRow = (row + i + this.size) % this.size;
+                        const newCol = (col + j + this.size) % this.size;
+                        count += this.grid[newRow][newCol];
+                    }
+                }
+                
+                return count;
+            }
+
+            saveToHistory() {
+                if (this.history.length >= this.maxHistory) {
+                    this.history.shift();
+                }
+                
+                this.history.push(this.grid.map(row => [...row]));
+            }
+
+            jumpToGeneration(targetGen) {
+                if (targetGen < this.history.length) {
+                    this.grid = this.history[targetGen].map(row => [...row]);
+                    this.generation = targetGen;
+                    this.render();
+                }
+            }
+
+            updateGenerationSlider() {
+                const slider = document.getElementById('generationSlider');
+                slider.max = Math.max(this.generation, 1000);
+                slider.value = this.generation;
+                document.getElementById('generationValue').textContent = this.generation;
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                const cellSize = Math.min(this.canvas.width, this.canvas.height) / this.size * this.zoom;
+                const startX = (this.canvas.width - this.size * cellSize) / 2 + this.offsetX * this.zoom;
+                const startY = (this.canvas.height - this.size * cellSize) / 2 + this.offsetY * this.zoom;
+                
+                // グリッド背景
+                this.ctx.fillStyle = '#ecf0f1';
+                this.ctx.fillRect(startX, startY, this.size * cellSize, this.size * cellSize);
+                
+                // セルの描画
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        if (this.grid[row][col] === 1) {
+                            const x = startX + col * cellSize;
+                            const y = startY + row * cellSize;
+                            
+                            // 生きているセルのグラデーション効果
+                            const gradient = this.ctx.createRadialGradient(
+                                x + cellSize / 2, y + cellSize / 2, 0,
+                                x + cellSize / 2, y + cellSize / 2, cellSize / 2
+                            );
+                            gradient.addColorStop(0, '#27ae60');
+                            gradient.addColorStop(1, '#229954');
+                            
+                            this.ctx.fillStyle = gradient;
+                            this.ctx.fillRect(x, y, cellSize, cellSize);
+                            
+                            // 境界線
+                            if (cellSize > 2) {
+                                this.ctx.strokeStyle = '#1e8449';
+                                this.ctx.lineWidth = 0.5;
+                                this.ctx.strokeRect(x, y, cellSize, cellSize);
+                            }
+                        }
+                    }
+                }
+                
+                // グリッド線（ズーム時）
+                if (cellSize > 4) {
+                    this.ctx.strokeStyle = '#bdc3c7';
+                    this.ctx.lineWidth = 0.2;
+                    
+                    for (let i = 0; i <= this.size; i++) {
+                        const x = startX + i * cellSize;
+                        const y = startY + i * cellSize;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(x, startY);
+                        this.ctx.lineTo(x, startY + this.size * cellSize);
+                        this.ctx.stroke();
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(startX, y);
+                        this.ctx.lineTo(startX + this.size * cellSize, y);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+
+            updateStats() {
+                const aliveCells = this.grid.flat().reduce((sum, cell) => sum + cell, 0);
+                const totalCells = this.size * this.size;
+                const population = (aliveCells / totalCells * 100).toFixed(1);
+                
+                document.getElementById('generationCount').textContent = this.generation;
+                document.getElementById('aliveCells').textContent = aliveCells;
+                document.getElementById('population').textContent = `${population}%`;
+                
+                // 変化率計算
+                if (this.history.length > 1) {
+                    const prevAliveCells = this.history[this.history.length - 2].flat().reduce((sum, cell) => sum + cell, 0);
+                    const changeRate = Math.abs(aliveCells - prevAliveCells) / totalCells * 100;
+                    document.getElementById('changeRate').textContent = `${changeRate.toFixed(1)}%`;
+                } else {
+                    document.getElementById('changeRate').textContent = '0%';
+                }
+            }
+
+            analyzePattern() {
+                // パターン解析の実装
+                const analysis = this.performPatternAnalysis();
+                
+                document.getElementById('patternType').textContent = analysis.type;
+                document.getElementById('stability').textContent = analysis.stability;
+                document.getElementById('period').textContent = analysis.period;
+                document.getElementById('complexity').textContent = analysis.complexity;
+            }
+
+            performPatternAnalysis() {
+                if (this.history.length < 10) {
+                    return {
+                        type: '不十分なデータ',
+                        stability: '未確定',
+                        period: '-',
+                        complexity: '-'
+                    };
+                }
+                
+                // 周期検出
+                const period = this.detectPeriod();
+                
+                // 安定性判定
+                const stability = this.calculateStability();
+                
+                // パターンタイプ分類
+                const type = this.classifyPattern(period, stability);
+                
+                // 複雑度計算
+                const complexity = this.calculateComplexity();
+                
+                return { type, stability, period, complexity };
+            }
+
+            detectPeriod() {
+                const recentHistory = this.history.slice(-20);
+                
+                for (let period = 1; period <= 10; period++) {
+                    if (this.checkPeriod(recentHistory, period)) {
+                        return period.toString();
+                    }
+                }
+                
+                return 'なし';
+            }
+
+            checkPeriod(history, period) {
+                if (history.length < period * 2) return false;
+                
+                for (let i = 0; i < period; i++) {
+                    const index1 = history.length - 1 - i;
+                    const index2 = history.length - 1 - i - period;
+                    
+                    if (!this.gridsEqual(history[index1], history[index2])) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+
+            gridsEqual(grid1, grid2) {
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        if (grid1[row][col] !== grid2[row][col]) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            calculateStability() {
+                if (this.history.length < 5) return '計算中';
+                
+                const recent = this.history.slice(-5);
+                let changeSum = 0;
+                
+                for (let i = 1; i < recent.length; i++) {
+                    let changes = 0;
+                    for (let row = 0; row < this.size; row++) {
+                        for (let col = 0; col < this.size; col++) {
+                            if (recent[i][row][col] !== recent[i-1][row][col]) {
+                                changes++;
+                            }
+                        }
+                    }
+                    changeSum += changes;
+                }
+                
+                const avgChanges = changeSum / (recent.length - 1);
+                const totalCells = this.size * this.size;
+                const stability = (1 - avgChanges / totalCells) * 100;
+                
+                return `${stability.toFixed(1)}%`;
+            }
+
+            classifyPattern(period, stability) {
+                const stabilityNum = parseFloat(stability);
+                
+                if (stabilityNum > 95) return '安定';
+                if (period !== 'なし' && period !== '不十分なデータ') return '振動';
+                if (stabilityNum < 20) return 'カオス';
+                return '遷移中';
+            }
+
+            calculateComplexity() {
+                const aliveCells = this.grid.flat().reduce((sum, cell) => sum + cell, 0);
+                const totalCells = this.size * this.size;
+                
+                // エントロピーベースの複雑度計算（簡略版）
+                const density = aliveCells / totalCells;
+                const entropy = -density * Math.log2(density + 0.001) - (1 - density) * Math.log2(1 - density + 0.001);
+                
+                return (entropy * 100).toFixed(1);
+            }
+
+            // プリセットパターン
+            initializePresets() {
+                return {
+                    glider: [
+                        [0, 1, 0],
+                        [0, 0, 1],
+                        [1, 1, 1]
+                    ],
+                    oscillator: [
+                        [1, 1, 1]
+                    ],
+                    gun: [
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                        [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                    ],
+                    pulsar: [
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0]
+                    ],
+                    beehive: [
+                        [0,1,1,0],
+                        [1,0,0,1],
+                        [0,1,1,0]
+                    ]
+                    // 他のプリセットは簡略化
+                };
+            }
+
+            loadPreset(name) {
+                this.clearGrid();
+                
+                const pattern = this.presets[name];
+                if (!pattern) {
+                    // 簡単なパターン生成
+                    this.generateSimplePattern(name);
+                    return;
+                }
+                
+                const startRow = Math.floor((this.size - pattern.length) / 2);
+                const startCol = Math.floor((this.size - pattern[0].length) / 2);
+                
+                for (let row = 0; row < pattern.length; row++) {
+                    for (let col = 0; col < pattern[row].length; col++) {
+                        if (startRow + row < this.size && startCol + col < this.size) {
+                            this.grid[startRow + row][startCol + col] = pattern[row][col];
+                        }
+                    }
+                }
+                
+                this.render();
+            }
+
+            generateSimplePattern(name) {
+                const centerRow = Math.floor(this.size / 2);
+                const centerCol = Math.floor(this.size / 2);
+                
+                switch (name) {
+                    case 'toad':
+                        this.grid[centerRow][centerCol] = 1;
+                        this.grid[centerRow][centerCol + 1] = 1;
+                        this.grid[centerRow][centerCol + 2] = 1;
+                        this.grid[centerRow + 1][centerCol - 1] = 1;
+                        this.grid[centerRow + 1][centerCol] = 1;
+                        this.grid[centerRow + 1][centerCol + 1] = 1;
+                        break;
+                    case 'beacon':
+                        this.grid[centerRow][centerCol] = 1;
+                        this.grid[centerRow][centerCol + 1] = 1;
+                        this.grid[centerRow + 1][centerCol] = 1;
+                        this.grid[centerRow + 2][centerCol + 3] = 1;
+                        this.grid[centerRow + 3][centerCol + 2] = 1;
+                        this.grid[centerRow + 3][centerCol + 3] = 1;
+                        break;
+                    default:
+                        // ランダムパターン
+                        for (let i = -2; i <= 2; i++) {
+                            for (let j = -2; j <= 2; j++) {
+                                if (Math.random() < 0.4) {
+                                    this.grid[centerRow + i][centerCol + j] = 1;
+                                }
+                            }
+                        }
+                }
+                
+                this.render();
+            }
+
+            // 制御関数
+            startSimulation() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.lastUpdate = performance.now();
+                this.simulationLoop();
+            }
+
+            pauseSimulation() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+            }
+
+            stepSimulation() {
+                this.update();
+            }
+
+            resetSimulation() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                this.initializeGrid();
+                this.render();
+            }
+
+            simulationLoop() {
+                if (!this.isRunning) return;
+                
+                const now = performance.now();
+                
+                if (now - this.lastUpdate >= this.updateInterval) {
+                    this.update();
+                    this.lastUpdate = now;
+                    
+                    // パフォーマンス更新
+                    const fps = Math.round(1000 / (now - this.lastUpdate + this.updateInterval));
+                    document.getElementById('performance').textContent = `${fps} fps`;
+                    
+                    const genPerSec = Math.round(1000 / this.updateInterval);
+                    document.getElementById('updateRate').textContent = `${genPerSec} gen/s`;
+                }
+                
+                this.animationId = requestAnimationFrame(() => this.simulationLoop());
+            }
+
+            zoomIn() {
+                this.zoom = Math.min(10, this.zoom * 1.2);
+                this.render();
+            }
+
+            zoomOut() {
+                this.zoom = Math.max(0.1, this.zoom / 1.2);
+                this.render();
+            }
+
+            resetZoom() {
+                this.zoom = 1;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.render();
+            }
+
+            togglePan() {
+                const btn = document.getElementById('panBtn');
+                if (btn.textContent === '✋') {
+                    btn.textContent = '👆';
+                    this.canvas.style.cursor = 'grab';
+                } else {
+                    btn.textContent = '✋';
+                    this.canvas.style.cursor = 'crosshair';
+                }
+            }
+
+            // データ管理
+            saveState() {
+                const state = {
+                    grid: this.grid,
+                    generation: this.generation,
+                    size: this.size,
+                    ruleType: this.ruleType,
+                    survivalRules: this.survivalRules,
+                    birthRules: this.birthRules,
+                    wolframCode: this.wolframCode
+                };
+                
+                localStorage.setItem('ca-simulator-state', JSON.stringify(state));
+                alert('状態が保存されました');
+            }
+
+            loadState() {
+                const saved = localStorage.getItem('ca-simulator-state');
+                if (!saved) {
+                    alert('保存された状態がありません');
+                    return;
+                }
+                
+                try {
+                    const state = JSON.parse(saved);
+                    this.grid = state.grid;
+                    this.generation = state.generation;
+                    this.size = state.size;
+                    this.ruleType = state.ruleType;
+                    this.survivalRules = state.survivalRules;
+                    this.birthRules = state.birthRules;
+                    this.wolframCode = state.wolframCode;
+                    
+                    this.updateGenerationSlider();
+                    this.render();
+                    alert('状態が読み込まれました');
+                } catch (e) {
+                    alert('状態の読み込みに失敗しました');
+                }
+            }
+
+            exportData() {
+                const data = {
+                    grid: this.grid,
+                    generation: this.generation,
+                    size: this.size,
+                    rules: {
+                        type: this.ruleType,
+                        survival: this.survivalRules,
+                        birth: this.birthRules,
+                        wolfram: this.wolframCode
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ca-simulator-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importData() {
+                document.getElementById('fileInput').click();
+            }
+
+            handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        this.grid = data.grid;
+                        this.generation = data.generation || 0;
+                        this.size = data.size || 128;
+                        
+                        if (data.rules) {
+                            this.ruleType = data.rules.type || 'conway';
+                            this.survivalRules = data.rules.survival || [2, 3];
+                            this.birthRules = data.rules.birth || [3];
+                            this.wolframCode = data.rules.wolfram || 30;
+                        }
+                        
+                        this.updateGenerationSlider();
+                        this.render();
+                        alert('データが読み込まれました');
+                    } catch (err) {
+                        alert('ファイルの読み込みに失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // グローバル関数（HTML側から呼び出される）
+        let simulator;
+
+        function startSimulation() {
+            simulator.startSimulation();
+        }
+
+        function pauseSimulation() {
+            simulator.pauseSimulation();
+        }
+
+        function stepSimulation() {
+            simulator.stepSimulation();
+        }
+
+        function resetSimulation() {
+            simulator.resetSimulation();
+        }
+
+        function randomizeGrid() {
+            simulator.randomizeGrid();
+        }
+
+        function clearGrid() {
+            simulator.clearGrid();
+        }
+
+        function changeRuleType() {
+            const ruleType = document.getElementById('ruleType').value;
+            simulator.ruleType = ruleType;
+            
+            // ルールUI表示切り替え
+            document.getElementById('conwayRules').style.display = ruleType === 'conway' ? 'block' : 'none';
+            document.getElementById('wolframRules').style.display = ruleType === 'wolfram' ? 'block' : 'none';
+            document.getElementById('customRules').style.display = ruleType === 'custom' ? 'block' : 'none';
+        }
+
+        function loadPreset(name) {
+            simulator.loadPreset(name);
+        }
+
+        function analyzePattern() {
+            simulator.analyzePattern();
+        }
+
+        function zoomIn() {
+            simulator.zoomIn();
+        }
+
+        function zoomOut() {
+            simulator.zoomOut();
+        }
+
+        function resetZoom() {
+            simulator.resetZoom();
+        }
+
+        function togglePan() {
+            simulator.togglePan();
+        }
+
+        function saveState() {
+            simulator.saveState();
+        }
+
+        function loadState() {
+            simulator.loadState();
+        }
+
+        function exportData() {
+            simulator.exportData();
+        }
+
+        function importData() {
+            simulator.importData();
+        }
+
+        function handleFileImport(event) {
+            simulator.handleFileImport(event);
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            simulator = new CellularAutomatonSimulator();
+        });
+    </script>
+</body>
+</html>
