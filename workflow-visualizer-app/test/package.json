@@ -1,0 +1,81 @@
+{
+  "name": "workflow-visualizer-test-suite",
+  "version": "1.0.0",
+  "description": "Comprehensive test suite for Workflow Visualizer app with 100 test cases",
+  "main": "run-tests.js",
+  "scripts": {
+    "test": "node run-tests.js",
+    "test:functional": "node run-tests.js",
+    "test:css": "node css-validator.js",
+    "test:dom": "node dom-validator.js",
+    "test:comprehensive": "node report-generator.js",
+    "server:mock": "node mock-server.js",
+    "server:start": "node mock-server.js",
+    "server:stop": "pkill -f mock-server.js",
+    "report:generate": "node report-generator.js",
+    "install": "npm install",
+    "setup": "npm install && echo 'Test suite setup complete'",
+    "clean": "rm -f *.html *.json *.csv *.md && echo 'Test reports cleaned'",
+    "validate:all": "npm run test:css && npm run test:dom && npm run test:functional",
+    "help": "echo 'Available commands: test, test:css, test:dom, test:comprehensive, server:mock'"
+  },
+  "keywords": [
+    "testing",
+    "automation",
+    "workflow",
+    "visualizer",
+    "puppeteer",
+    "css",
+    "dom",
+    "validation"
+  ],
+  "author": "Claude Code Test Framework",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "express": "^4.18.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "workflow-visualizer-app"
+  },
+  "bugs": {
+    "url": "https://github.com/workflow-visualizer-app/issues"
+  },
+  "homepage": "https://github.com/workflow-visualizer-app#readme",
+  "testConfig": {
+    "totalTestCases": 100,
+    "categories": {
+      "functional": 70,
+      "design": 10,
+      "security": 10,
+      "performance": 10
+    },
+    "browser": {
+      "headless": false,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timeout": 30000
+    },
+    "mockServer": {
+      "port": 3001,
+      "endpoints": [
+        "/upload",
+        "/insights",
+        "/add-resolution",
+        "/download",
+        "/health"
+      ]
+    }
+  }
+}

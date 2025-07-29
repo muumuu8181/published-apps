@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Êt®Í¢40%	 -->
+        <div class="left">
+            <div class="upload-section">
+                <h2>«¸øeõ</h2>
+                
+                <!-- ’°§Î¢√◊Ì¸… -->
+                <div class="input-group">
+                    <label for="file-upload">JSON’°§Îí¢√◊Ì¸…:</label>
+                    <input type="file" id="file-upload" accept=".json" class="file-input">
+                </div>
+                
+                <!-- ∆≠π»®Í¢ -->
+                <div class="input-group">
+                    <label for="log-input">Ì∞«¸øíÙ•eõ:</label>
+                    <textarea id="log-input" placeholder="JSON«¸øíSSkeõWfO`UD..." rows="8"></textarea>
+                </div>
+                
+                <!-- Visualize‹øÛ -->
+                <button id="visualize-btn" class="button">Visualize</button>
+                
+                <!-- ®È¸h:®Í¢ -->
+                <div id="error-message" class="error" style="display: none;"></div>
+            </div>
+            
+            <!-- §Ûµ§»®Í¢ -->
+            <div class="insights-section">
+                <h3>§Ûµ§»</h3>
+                <div id="insights-list" class="list">
+                    <p>«¸øíÔñYãh§Ûµ§»Lh:Uå~Y</p>
+                </div>
+                
+                <!-- Export Insights‹øÛ -->
+                <button id="export-btn" class="button">Export</button>
+            </div>
+        </div>
+        
+        <!-- Ût®Í¢60%	 -->
+        <div class="right">
+            <div class="chart-section">
+                <h2 id="chart-label">Ô¸Ø’Ì¸Ôñ</h2>
+                <div class="chart">
+                    <canvas id="workflowChart" width="400" height="300"></canvas>
+                </div>
+                
+                <!-- ¡„¸»¨ -->
+                <div class="chart-info">
+                    <p>=  Ô¸Ø’Ì¸nüL∂¡hùX¢¬íÔñW~Y</p>
+                    <p>= «¸øL¢√◊Ì¸…UåãhÍ’Ñk¡„¸»LÙ∞Uå~Y</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ¢Øª∑”Í∆£˛‹ -->
+    <div class="sr-only" aria-live="polite" id="status-message"></div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,1713 @@
+{
+  "testSuite": "Workflow Visualizer Comprehensive Test Cases",
+  "version": "1.0",
+  "totalTests": 100,
+  "categories": {
+    "function": 70,
+    "design": 10,
+    "security": 10,
+    "performance": 10
+  },
+  "testCases": [
+    {
+      "id": 1,
+      "category": "function",
+      "operation": "Upload log with 18 steps",
+      "input": {
+        "type": "json",
+        "data": "Array of 18 step objects with stepId, description, timeSpent"
+      },
+      "expected": "Timeline displayed successfully",
+      "description": "Basic upload functionality with valid 18-step workflow",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Clear existing data",
+        "action": "Upload valid JSON with 18 steps",
+        "verify": "Chart renders with 18 bars, timeline shows correct steps"
+      }
+    },
+    {
+      "id": 2,
+      "category": "function",
+      "operation": "Invalid JSON input",
+      "input": {
+        "type": "malformed_json",
+        "data": "{invalid json syntax"
+      },
+      "expected": "Invalid: Malformed",
+      "description": "Error handling for malformed JSON input",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Clear textarea",
+        "action": "Enter malformed JSON",
+        "verify": "Error message displays 'Invalid: Malformed'"
+      }
+    },
+    {
+      "id": 3,
+      "category": "function",
+      "operation": "Visualize errors at [3,8,15]",
+      "input": {
+        "type": "json_with_errors",
+        "data": "Steps with error:true at positions 3, 8, 15"
+      },
+      "expected": "Highlighted in chart",
+      "description": "Error visualization in chart with red highlighting",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Prepare workflow with errors at specified positions",
+        "action": "Visualize data",
+        "verify": "Error bars display in red (#ff6b6b), error animation triggers"
+      }
+    },
+    {
+      "id": 4,
+      "category": "function",
+      "operation": "Add resolution to step 3",
+      "input": {
+        "type": "resolution",
+        "data": "Click on error step 3, add resolution text"
+      },
+      "expected": "Insight saved",
+      "description": "Adding resolution to error step via interaction",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Load workflow with error at step 3",
+        "action": "Click step 3, enter resolution",
+        "verify": "Resolution saved, insight added to list"
+      }
+    },
+    {
+      "id": 5,
+      "category": "function",
+      "operation": "Export after analysis",
+      "input": {
+        "type": "export_request",
+        "data": "Click Export button after analysis"
+      },
+      "expected": "JSON with insights",
+      "description": "Export functionality with insights included",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Complete analysis with insights",
+        "action": "Click Export button",
+        "verify": "JSON file downloads with insights data"
+      }
+    },
+    {
+      "id": 6,
+      "category": "function",
+      "operation": "51 steps log",
+      "input": {
+        "type": "oversized_json",
+        "data": "Array of 51 step objects"
+      },
+      "expected": "Limit exceeded",
+      "description": "Maximum limit validation for 50 steps",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Generate 51-step workflow",
+        "action": "Upload oversized data",
+        "verify": "Error: 'Limit exceeded: Maximum 50 steps allowed'"
+      }
+    },
+    {
+      "id": 7,
+      "category": "function",
+      "operation": "Animation on error hover",
+      "input": {
+        "type": "hover_interaction",
+        "data": "Hover over error step in chart"
+      },
+      "expected": "Fade effect",
+      "description": "Animation confirmation for error highlighting",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Chart with error steps",
+        "action": "Hover over error element",
+        "verify": "fadeInOut animation class applied"
+      }
+    },
+    {
+      "id": 8,
+      "category": "function",
+      "operation": "Empty log",
+      "input": {
+        "type": "empty_array",
+        "data": "[]"
+      },
+      "expected": "Invalid: No data",
+      "description": "Empty input error handling",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Clear input",
+        "action": "Submit empty array",
+        "verify": "Error: 'Invalid: No data provided'"
+      }
+    },
+    {
+      "id": 9,
+      "category": "function",
+      "operation": "Filter by error steps",
+      "input": {
+        "type": "filter_errors",
+        "data": "Apply error filter to workflow"
+      },
+      "expected": "Only errors shown",
+      "description": "Filter functionality for error steps only",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Workflow with mixed success/error steps",
+        "action": "Apply error filter",
+        "verify": "Only error steps visible in chart"
+      }
+    },
+    {
+      "id": 10,
+      "category": "function",
+      "operation": "Summary total time 30min",
+      "input": {
+        "type": "time_calculation",
+        "data": "Workflow with total timeSpent = 30 minutes"
+      },
+      "expected": "Correct display",
+      "description": "Time aggregation accuracy verification",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create workflow totaling 30 minutes",
+        "action": "Calculate total time",
+        "verify": "calculateTotalTime() returns 30"
+      }
+    },
+    {
+      "id": 11,
+      "category": "security",
+      "operation": "XSS Prevention Test",
+      "input": {
+        "type": "xss_payload",
+        "data": "<script>alert('test')</script>"
+      },
+      "expected": "Invalid: Unsafe",
+      "description": "XSS attack prevention in resolution input",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Error step ready for resolution",
+        "action": "Enter script tag as resolution",
+        "verify": "Input sanitized or blocked"
+      }
+    },
+    {
+      "id": 12,
+      "category": "function",
+      "operation": "Visualize trials as bubbles",
+      "input": {
+        "type": "trial_data",
+        "data": "Steps with varying trials (1-10)"
+      },
+      "expected": "Size based on trials",
+      "description": "Bubble visualization based on trial count",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Workflow with varying trial counts",
+        "action": "Visualize data",
+        "verify": "pointRadius scales with trials value"
+      }
+    },
+    {
+      "id": 13,
+      "category": "function",
+      "operation": "Export empty insights",
+      "input": {
+        "type": "empty_insights",
+        "data": "No insights available"
+      },
+      "expected": "Empty JSON",
+      "description": "Edge case for empty insights export",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "No analysis performed",
+        "action": "Click Export",
+        "verify": "Empty or minimal JSON structure exported"
+      }
+    },
+    {
+      "id": 14,
+      "category": "function",
+      "operation": "Multiple uploads",
+      "input": {
+        "type": "sequential_uploads",
+        "data": "Upload file A, then upload file B"
+      },
+      "expected": "Overwrite data",
+      "description": "Data replacement on subsequent uploads",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Upload first workflow",
+        "action": "Upload second workflow",
+        "verify": "currentData replaced, chart updates"
+      }
+    },
+    {
+      "id": 15,
+      "category": "function",
+      "operation": "Animation transition",
+      "input": {
+        "type": "chart_animation",
+        "data": "Chart creation with animation enabled"
+      },
+      "expected": "Smooth workflow flow",
+      "description": "Visual animation for workflow flow",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Prepare chart data",
+        "action": "Create chart",
+        "verify": "Chart.js animation: duration 1000ms, easing 'easeInOutQuart'"
+      }
+    },
+    {
+      "id": 16,
+      "category": "function",
+      "operation": "Unicode description",
+      "input": {
+        "type": "unicode_text",
+        "data": "Description with 日本語 characters"
+      },
+      "expected": "Success display",
+      "description": "Unicode character support in descriptions",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with Unicode description",
+        "action": "Visualize workflow",
+        "verify": "Unicode text displays correctly in chart and tooltips"
+      }
+    },
+    {
+      "id": 17,
+      "category": "function",
+      "operation": "High trials (10) visualization",
+      "input": {
+        "type": "high_trials",
+        "data": "Step with trials: 10"
+      },
+      "expected": "Large bubble",
+      "description": "Scaling for high trial counts",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Step with 10 trials",
+        "action": "Visualize data",
+        "verify": "pointRadius = min(5 + 10*2, 15) = 15 (maximum)"
+      }
+    },
+    {
+      "id": 18,
+      "category": "function",
+      "operation": "Resolution edit",
+      "input": {
+        "type": "edit_resolution",
+        "data": "Modify existing resolution text"
+      },
+      "expected": "Updated insight",
+      "description": "Resolution editing functionality",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Step with existing resolution",
+        "action": "Edit resolution text",
+        "verify": "Resolution updated in currentData and insights"
+      }
+    },
+    {
+      "id": 19,
+      "category": "performance",
+      "operation": "Quick visualize (1s)",
+      "input": {
+        "type": "performance_test",
+        "data": "Measure visualization render time"
+      },
+      "expected": "Instant render",
+      "description": "Performance test for fast visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Standard workflow data",
+        "action": "Measure render time",
+        "verify": "Chart renders within 1000ms"
+      }
+    },
+    {
+      "id": 20,
+      "category": "function",
+      "operation": "Log all operations",
+      "input": {
+        "type": "logging_verification",
+        "data": "Perform various operations"
+      },
+      "expected": "Console has logs",
+      "description": "Logging functionality verification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Clear console",
+        "action": "Perform operations",
+        "verify": "debugLog() and showStatusMessage() generate console output"
+      }
+    },
+    {
+      "id": 21,
+      "category": "function",
+      "operation": "1 step workflow",
+      "input": {
+        "type": "minimal_workflow",
+        "data": "Single step with basic properties"
+      },
+      "expected": "Single bar chart",
+      "description": "Minimal workflow with 1 step",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create 1-step workflow",
+        "action": "Visualize",
+        "verify": "Chart displays single bar"
+      }
+    },
+    {
+      "id": 22,
+      "category": "function",
+      "operation": "5 step workflow",
+      "input": {
+        "type": "small_workflow",
+        "data": "5 steps with varying properties"
+      },
+      "expected": "5 bar timeline",
+      "description": "Small workflow visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create 5-step workflow",
+        "action": "Visualize",
+        "verify": "Chart displays 5 bars with correct data"
+      }
+    },
+    {
+      "id": 23,
+      "category": "function",
+      "operation": "10 step workflow",
+      "input": {
+        "type": "medium_workflow",
+        "data": "10 steps with mixed success/error"
+      },
+      "expected": "10 bar timeline",
+      "description": "Medium workflow visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create 10-step workflow",
+        "action": "Visualize",
+        "verify": "Chart displays 10 bars with proper spacing"
+      }
+    },
+    {
+      "id": 24,
+      "category": "function",
+      "operation": "25 step workflow",
+      "input": {
+        "type": "large_workflow",
+        "data": "25 steps with comprehensive data"
+      },
+      "expected": "25 bar timeline",
+      "description": "Large workflow visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create 25-step workflow",
+        "action": "Visualize",
+        "verify": "Chart handles 25 bars without performance issues"
+      }
+    },
+    {
+      "id": 25,
+      "category": "function",
+      "operation": "50 step workflow (maximum)",
+      "input": {
+        "type": "maximum_workflow",
+        "data": "50 steps at the maximum limit"
+      },
+      "expected": "50 bar timeline",
+      "description": "Maximum allowed workflow size",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create 50-step workflow",
+        "action": "Visualize",
+        "verify": "Chart displays all 50 steps successfully"
+      }
+    },
+    {
+      "id": 26,
+      "category": "function",
+      "operation": "Random 3-step workflow",
+      "input": {
+        "type": "random_small",
+        "data": "Randomly generated 3 steps"
+      },
+      "expected": "Successful visualization",
+      "description": "Random data handling - small size",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Generate random 3-step data",
+        "action": "Visualize",
+        "verify": "Chart renders without errors"
+      }
+    },
+    {
+      "id": 27,
+      "category": "function",
+      "operation": "Random 7-step workflow",
+      "input": {
+        "type": "random_medium",
+        "data": "Randomly generated 7 steps"
+      },
+      "expected": "Successful visualization",
+      "description": "Random data handling - medium size",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Generate random 7-step data",
+        "action": "Visualize",
+        "verify": "All random data displays correctly"
+      }
+    },
+    {
+      "id": 28,
+      "category": "function",
+      "operation": "Random 15-step workflow",
+      "input": {
+        "type": "random_large",
+        "data": "Randomly generated 15 steps"
+      },
+      "expected": "Successful visualization",
+      "description": "Random data handling - large size",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Generate random 15-step data",
+        "action": "Visualize",
+        "verify": "Chart handles varied random values"
+      }
+    },
+    {
+      "id": 29,
+      "category": "function",
+      "operation": "Random 30-step workflow",
+      "input": {
+        "type": "random_very_large",
+        "data": "Randomly generated 30 steps"
+      },
+      "expected": "Successful visualization",
+      "description": "Random data handling - very large size",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Generate random 30-step data",
+        "action": "Visualize",
+        "verify": "Performance acceptable with large random dataset"
+      }
+    },
+    {
+      "id": 30,
+      "category": "function",
+      "operation": "Random 45-step workflow",
+      "input": {
+        "type": "random_near_max",
+        "data": "Randomly generated 45 steps"
+      },
+      "expected": "Successful visualization",
+      "description": "Random data handling - near maximum",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Generate random 45-step data",
+        "action": "Visualize",
+        "verify": "Chart handles near-maximum random data"
+      }
+    },
+    {
+      "id": 31,
+      "category": "function",
+      "operation": "0% error rate visualization",
+      "input": {
+        "type": "no_errors",
+        "data": "Workflow with all successful steps"
+      },
+      "expected": "All green bars",
+      "description": "Perfect workflow with no errors",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create workflow with error:false for all steps",
+        "action": "Visualize",
+        "verify": "All bars display in success color (#4ecdc4)"
+      }
+    },
+    {
+      "id": 32,
+      "category": "function",
+      "operation": "20% error rate visualization",
+      "input": {
+        "type": "low_errors",
+        "data": "Workflow with 20% error steps"
+      },
+      "expected": "Mixed color bars",
+      "description": "Low error rate visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "10-step workflow with 2 errors",
+        "action": "Visualize",
+        "verify": "2 red bars, 8 green bars displayed"
+      }
+    },
+    {
+      "id": 33,
+      "category": "function",
+      "operation": "50% error rate visualization",
+      "input": {
+        "type": "medium_errors",
+        "data": "Workflow with 50% error steps"
+      },
+      "expected": "Half red bars",
+      "description": "Medium error rate visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "10-step workflow with 5 errors",
+        "action": "Visualize",
+        "verify": "5 red bars, 5 green bars displayed"
+      }
+    },
+    {
+      "id": 34,
+      "category": "function",
+      "operation": "80% error rate visualization",
+      "input": {
+        "type": "high_errors",
+        "data": "Workflow with 80% error steps"
+      },
+      "expected": "Mostly red bars",
+      "description": "High error rate visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "10-step workflow with 8 errors",
+        "action": "Visualize",
+        "verify": "8 red bars, 2 green bars, error animation triggers"
+      }
+    },
+    {
+      "id": 35,
+      "category": "function",
+      "operation": "100% error rate visualization",
+      "input": {
+        "type": "all_errors",
+        "data": "Workflow with all error steps"
+      },
+      "expected": "All red bars",
+      "description": "Complete failure workflow",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create workflow with error:true for all steps",
+        "action": "Visualize",
+        "verify": "All bars display in error color (#ff6b6b)"
+      }
+    },
+    {
+      "id": 36,
+      "category": "function",
+      "operation": "Alternating error pattern",
+      "input": {
+        "type": "alternating_errors",
+        "data": "Error pattern: success, error, success, error..."
+      },
+      "expected": "Checkerboard pattern",
+      "description": "Alternating success/error visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Create alternating error pattern",
+        "action": "Visualize",
+        "verify": "Colors alternate between green and red"
+      }
+    },
+    {
+      "id": 37,
+      "category": "function",
+      "operation": "Error clusters",
+      "input": {
+        "type": "clustered_errors",
+        "data": "Groups of consecutive errors"
+      },
+      "expected": "Red clusters visible",
+      "description": "Clustered error pattern visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Create error clusters (e.g., steps 3-5, 8-10)",
+        "action": "Visualize",
+        "verify": "Red clusters clearly distinguishable"
+      }
+    },
+    {
+      "id": 38,
+      "category": "function",
+      "operation": "Single error in workflow",
+      "input": {
+        "type": "single_error",
+        "data": "One error among many successful steps"
+      },
+      "expected": "One red bar highlighted",
+      "description": "Single error detection and highlighting",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "10-step workflow with error at step 5",
+        "action": "Visualize",
+        "verify": "Step 5 highlighted in red, others green"
+      }
+    },
+    {
+      "id": 39,
+      "category": "function",
+      "operation": "Error at first step",
+      "input": {
+        "type": "first_step_error",
+        "data": "Error occurs at the very first step"
+      },
+      "expected": "First bar red",
+      "description": "Initial step error handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Workflow with error at step 1",
+        "action": "Visualize",
+        "verify": "First bar displays in error color"
+      }
+    },
+    {
+      "id": 40,
+      "category": "function",
+      "operation": "Error at last step",
+      "input": {
+        "type": "last_step_error",
+        "data": "Error occurs at the final step"
+      },
+      "expected": "Last bar red",
+      "description": "Final step error handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Workflow with error at final step",
+        "action": "Visualize",
+        "verify": "Last bar displays in error color"
+      }
+    },
+    {
+      "id": 41,
+      "category": "function",
+      "operation": "1 trial per step",
+      "input": {
+        "type": "single_trials",
+        "data": "All steps with trials: 1"
+      },
+      "expected": "Small bubbles",
+      "description": "Minimum trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Workflow with trials:1 for all steps",
+        "action": "Visualize",
+        "verify": "pointRadius = 5 + 1*2 = 7 for all points"
+      }
+    },
+    {
+      "id": 42,
+      "category": "function",
+      "operation": "3 trials per step",
+      "input": {
+        "type": "medium_trials",
+        "data": "All steps with trials: 3"
+      },
+      "expected": "Medium bubbles",
+      "description": "Medium trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Workflow with trials:3 for all steps",
+        "action": "Visualize",
+        "verify": "pointRadius = 5 + 3*2 = 11 for all points"
+      }
+    },
+    {
+      "id": 43,
+      "category": "function",
+      "operation": "5 trials per step",
+      "input": {
+        "type": "high_trials",
+        "data": "All steps with trials: 5"
+      },
+      "expected": "Large bubbles",
+      "description": "High trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Workflow with trials:5 for all steps",
+        "action": "Visualize",
+        "verify": "pointRadius = 5 + 5*2 = 15 (max) for all points"
+      }
+    },
+    {
+      "id": 44,
+      "category": "function",
+      "operation": "10 trials per step",
+      "input": {
+        "type": "maximum_trials",
+        "data": "All steps with trials: 10"
+      },
+      "expected": "Maximum bubbles",
+      "description": "Maximum trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Workflow with trials:10 for all steps",
+        "action": "Visualize",
+        "verify": "pointRadius capped at 15 (min(5 + 10*2, 15))"
+      }
+    },
+    {
+      "id": 45,
+      "category": "function",
+      "operation": "Mixed trial counts",
+      "input": {
+        "type": "varied_trials",
+        "data": "Steps with trials: 1, 2, 3, 5, 8"
+      },
+      "expected": "Varied bubble sizes",
+      "description": "Variable trial count visualization",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create steps with different trial counts",
+        "action": "Visualize",
+        "verify": "Point sizes vary according to trial values"
+      }
+    },
+    {
+      "id": 46,
+      "category": "function",
+      "operation": "No trials specified",
+      "input": {
+        "type": "default_trials",
+        "data": "Steps without trials property"
+      },
+      "expected": "Default size bubbles",
+      "description": "Default trial handling when not specified",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Steps without trials property",
+        "action": "Visualize",
+        "verify": "pointRadius = 5 + (1)*2 = 7 (default to 1 trial)"
+      }
+    },
+    {
+      "id": 47,
+      "category": "function",
+      "operation": "Trial progression",
+      "input": {
+        "type": "trial_progression",
+        "data": "Trials increasing: 1, 2, 3, 4, 5"
+      },
+      "expected": "Growing bubbles",
+      "description": "Progressive trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Steps with incrementing trial counts",
+        "action": "Visualize",
+        "verify": "Bubble sizes increase progressively"
+      }
+    },
+    {
+      "id": 48,
+      "category": "function",
+      "operation": "Trial regression",
+      "input": {
+        "type": "trial_regression",
+        "data": "Trials decreasing: 5, 4, 3, 2, 1"
+      },
+      "expected": "Shrinking bubbles",
+      "description": "Regressive trial count visualization",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Steps with decrementing trial counts",
+        "action": "Visualize",
+        "verify": "Bubble sizes decrease progressively"
+      }
+    },
+    {
+      "id": 49,
+      "category": "function",
+      "operation": "Error with high trials",
+      "input": {
+        "type": "error_high_trials",
+        "data": "Error step with trials: 8"
+      },
+      "expected": "Large red bubble",
+      "description": "Error step with high trial count",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Error step with 8 trials",
+        "action": "Visualize",
+        "verify": "Red bar with large point radius (15)"
+      }
+    },
+    {
+      "id": 50,
+      "category": "function",
+      "operation": "Success with low trials",
+      "input": {
+        "type": "success_low_trials",
+        "data": "Success step with trials: 1"
+      },
+      "expected": "Small green bubble",
+      "description": "Success step with minimal trials",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Success step with 1 trial",
+        "action": "Visualize",
+        "verify": "Green bar with small point radius (7)"
+      }
+    },
+    {
+      "id": 51,
+      "category": "function",
+      "operation": "Null data input",
+      "input": {
+        "type": "null_data",
+        "data": null
+      },
+      "expected": "Invalid: No data",
+      "description": "Null data handling",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Pass null as data",
+        "action": "Validate input",
+        "verify": "Error: 'Invalid: No data provided'"
+      }
+    },
+    {
+      "id": 52,
+      "category": "function",
+      "operation": "Undefined data input",
+      "input": {
+        "type": "undefined_data",
+        "data": "undefined"
+      },
+      "expected": "Invalid: No data",
+      "description": "Undefined data handling",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Pass undefined as data",
+        "action": "Validate input",
+        "verify": "Error: 'Invalid: No data provided'"
+      }
+    },
+    {
+      "id": 53,
+      "category": "function",
+      "operation": "String instead of array",
+      "input": {
+        "type": "string_data",
+        "data": "\"not an array\""
+      },
+      "expected": "Invalid: Data must be an array",
+      "description": "Type validation for non-array input",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Pass string instead of array",
+        "action": "Validate input",
+        "verify": "Error: 'Invalid: Data must be an array'"
+      }
+    },
+    {
+      "id": 54,
+      "category": "function",
+      "operation": "Object instead of array",
+      "input": {
+        "type": "object_data",
+        "data": "{\"not\": \"array\"}"
+      },
+      "expected": "Invalid: Data must be an array",
+      "description": "Type validation for object input",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Pass object instead of array",
+        "action": "Validate input",
+        "verify": "Error: 'Invalid: Data must be an array'"
+      }
+    },
+    {
+      "id": 55,
+      "category": "function",
+      "operation": "Number instead of array",
+      "input": {
+        "type": "number_data",
+        "data": "123"
+      },
+      "expected": "Invalid: Data must be an array",
+      "description": "Type validation for numeric input",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Pass number instead of array",
+        "action": "Validate input",
+        "verify": "Error: 'Invalid: Data must be an array'"
+      }
+    },
+    {
+      "id": 56,
+      "category": "function",
+      "operation": "Missing stepId",
+      "input": {
+        "type": "missing_stepid",
+        "data": "Step object without stepId property"
+      },
+      "expected": "Invalid: Malformed log data - Missing stepId",
+      "description": "Required field validation for stepId",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step without stepId",
+        "action": "Validate step",
+        "verify": "Error mentions missing stepId"
+      }
+    },
+    {
+      "id": 57,
+      "category": "function",
+      "operation": "Missing description",
+      "input": {
+        "type": "missing_description",
+        "data": "Step object without description property"
+      },
+      "expected": "Invalid: Malformed log data - Missing description",
+      "description": "Required field validation for description",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step without description",
+        "action": "Validate step",
+        "verify": "Error mentions missing description"
+      }
+    },
+    {
+      "id": 58,
+      "category": "function",
+      "operation": "Missing timeSpent",
+      "input": {
+        "type": "missing_timespent",
+        "data": "Step object without timeSpent property"
+      },
+      "expected": "Invalid: Malformed log data - Missing timeSpent",
+      "description": "Required field validation for timeSpent",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step without timeSpent",
+        "action": "Validate step",
+        "verify": "Error mentions missing timeSpent"
+      }
+    },
+    {
+      "id": 59,
+      "category": "function",
+      "operation": "Invalid stepId type",
+      "input": {
+        "type": "invalid_stepid_type",
+        "data": "stepId as string instead of number"
+      },
+      "expected": "Invalid: stepId must be a number",
+      "description": "Type validation for stepId field",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step with stepId: \"1\"",
+        "action": "Validate step",
+        "verify": "Error: stepId must be a number"
+      }
+    },
+    {
+      "id": 60,
+      "category": "function",
+      "operation": "Invalid timeSpent type",
+      "input": {
+        "type": "invalid_timespent_type",
+        "data": "timeSpent as string instead of number"
+      },
+      "expected": "Invalid: Invalid timeSpent",
+      "description": "Type validation for timeSpent field",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step with timeSpent: \"10\"",
+        "action": "Validate step",
+        "verify": "Error: Invalid timeSpent"
+      }
+    },
+    {
+      "id": 61,
+      "category": "function",
+      "operation": "Negative timeSpent",
+      "input": {
+        "type": "negative_timespent",
+        "data": "timeSpent: -5"
+      },
+      "expected": "Invalid: Invalid timeSpent",
+      "description": "Boundary validation for negative time",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step with timeSpent: -5",
+        "action": "Validate step",
+        "verify": "Error: Invalid timeSpent"
+      }
+    },
+    {
+      "id": 62,
+      "category": "function",
+      "operation": "Zero timeSpent",
+      "input": {
+        "type": "zero_timespent",
+        "data": "timeSpent: 0"
+      },
+      "expected": "Valid input",
+      "description": "Boundary validation for zero time",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with timeSpent: 0",
+        "action": "Validate step",
+        "verify": "Validation passes (0 is valid)"
+      }
+    },
+    {
+      "id": 63,
+      "category": "function",
+      "operation": "Very large timeSpent",
+      "input": {
+        "type": "large_timespent",
+        "data": "timeSpent: 999999"
+      },
+      "expected": "Valid input",
+      "description": "Boundary validation for large time values",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Create step with timeSpent: 999999",
+        "action": "Validate step",
+        "verify": "Validation passes (large numbers accepted)"
+      }
+    },
+    {
+      "id": 64,
+      "category": "function",
+      "operation": "Float timeSpent",
+      "input": {
+        "type": "float_timespent",
+        "data": "timeSpent: 5.5"
+      },
+      "expected": "Valid input",
+      "description": "Decimal time values validation",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with timeSpent: 5.5",
+        "action": "Validate step",
+        "verify": "Validation passes (decimals accepted)"
+      }
+    },
+    {
+      "id": 65,
+      "category": "function",
+      "operation": "Empty description string",
+      "input": {
+        "type": "empty_description",
+        "data": "description: \"\""
+      },
+      "expected": "Invalid: Invalid description",
+      "description": "Empty string validation for description",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step with empty description",
+        "action": "Validate step",
+        "verify": "Error: Invalid description"
+      }
+    },
+    {
+      "id": 66,
+      "category": "function",
+      "operation": "Whitespace-only description",
+      "input": {
+        "type": "whitespace_description",
+        "data": "description: \"   \""
+      },
+      "expected": "Invalid: Invalid description",
+      "description": "Whitespace validation for description",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Create step with whitespace-only description",
+        "action": "Validate step",
+        "verify": "Error: Invalid description (trim() === '')"
+      }
+    },
+    {
+      "id": 67,
+      "category": "function",
+      "operation": "Invalid error type",
+      "input": {
+        "type": "invalid_error_type",
+        "data": "error: \"true\" (string instead of boolean)"
+      },
+      "expected": "Invalid: error must be boolean",
+      "description": "Type validation for optional error field",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with error: \"true\"",
+        "action": "Validate step",
+        "verify": "Error: error must be boolean"
+      }
+    },
+    {
+      "id": 68,
+      "category": "function",
+      "operation": "Invalid trials type",
+      "input": {
+        "type": "invalid_trials_type",
+        "data": "trials: \"3\" (string instead of number)"
+      },
+      "expected": "Invalid: trials must be a positive number",
+      "description": "Type validation for optional trials field",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with trials: \"3\"",
+        "action": "Validate step",
+        "verify": "Error: trials must be a positive number"
+      }
+    },
+    {
+      "id": 69,
+      "category": "function",
+      "operation": "Zero trials",
+      "input": {
+        "type": "zero_trials",
+        "data": "trials: 0"
+      },
+      "expected": "Invalid: trials must be a positive number",
+      "description": "Boundary validation for trials field",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with trials: 0",
+        "action": "Validate step",
+        "verify": "Error: trials must be a positive number"
+      }
+    },
+    {
+      "id": 70,
+      "category": "function",
+      "operation": "Negative trials",
+      "input": {
+        "type": "negative_trials",
+        "data": "trials: -2"
+      },
+      "expected": "Invalid: trials must be a positive number",
+      "description": "Boundary validation for negative trials",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create step with trials: -2",
+        "action": "Validate step",
+        "verify": "Error: trials must be a positive number"
+      }
+    },
+    {
+      "id": 71,
+      "category": "performance",
+      "operation": "Network timeout simulation",
+      "input": {
+        "type": "network_timeout",
+        "data": "Simulate slow/failed network request"
+      },
+      "expected": "Timeout error handling",
+      "description": "Network timeout error handling",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Mock slow network response",
+        "action": "Attempt upload",
+        "verify": "Appropriate timeout error displayed"
+      }
+    },
+    {
+      "id": 72,
+      "category": "performance",
+      "operation": "Server 500 error",
+      "input": {
+        "type": "server_error",
+        "data": "Simulate 500 Internal Server Error"
+      },
+      "expected": "Server error handling",
+      "description": "Server error response handling",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Mock 500 response",
+        "action": "Upload data",
+        "verify": "Error: 'Server error: 500'"
+      }
+    },
+    {
+      "id": 73,
+      "category": "performance",
+      "operation": "Server 404 error",
+      "input": {
+        "type": "not_found_error",
+        "data": "Simulate 404 Not Found Error"
+      },
+      "expected": "Not found error handling",
+      "description": "API endpoint not found handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Mock 404 response",
+        "action": "Upload data",
+        "verify": "Error: 'Server error: 404'"
+      }
+    },
+    {
+      "id": 74,
+      "category": "performance",
+      "operation": "Network disconnection",
+      "input": {
+        "type": "network_offline",
+        "data": "Simulate offline condition"
+      },
+      "expected": "Network error handling",
+      "description": "Offline network condition handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Simulate offline state",
+        "action": "Attempt operations",
+        "verify": "Appropriate network error messages"
+      }
+    },
+    {
+      "id": 75,
+      "category": "performance",
+      "operation": "Large file upload",
+      "input": {
+        "type": "large_file",
+        "data": "JSON file > 1MB"
+      },
+      "expected": "Performance acceptable",
+      "description": "Large file handling performance",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Create large JSON file",
+        "action": "Upload file",
+        "verify": "Processing time < 5 seconds"
+      }
+    },
+    {
+      "id": 76,
+      "category": "performance",
+      "operation": "Rapid successive uploads",
+      "input": {
+        "type": "rapid_uploads",
+        "data": "Multiple uploads in quick succession"
+      },
+      "expected": "No race conditions",
+      "description": "Concurrent operation handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Prepare multiple files",
+        "action": "Upload rapidly",
+        "verify": "No errors, final state consistent"
+      }
+    },
+    {
+      "id": 77,
+      "category": "performance",
+      "operation": "Memory usage monitoring",
+      "input": {
+        "type": "memory_test",
+        "data": "Monitor memory during operations"
+      },
+      "expected": "No memory leaks",
+      "description": "Memory usage validation",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Monitor initial memory",
+        "action": "Perform multiple operations",
+        "verify": "Memory usage remains stable"
+      }
+    },
+    {
+      "id": 78,
+      "category": "performance",
+      "operation": "Chart rendering performance",
+      "input": {
+        "type": "chart_performance",
+        "data": "50-step workflow rendering time"
+      },
+      "expected": "< 2 seconds",
+      "description": "Chart rendering speed validation",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "50-step workflow data",
+        "action": "Measure chart creation time",
+        "verify": "Chart renders within 2 seconds"
+      }
+    },
+    {
+      "id": 79,
+      "category": "performance",
+      "operation": "Animation performance",
+      "input": {
+        "type": "animation_performance",
+        "data": "Smooth 60fps animations"
+      },
+      "expected": "Smooth playback",
+      "description": "Animation smoothness validation",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Trigger error highlight animation",
+        "action": "Monitor frame rate",
+        "verify": "Animation maintains 60fps"
+      }
+    },
+    {
+      "id": 80,
+      "category": "performance",
+      "operation": "Tooltip performance",
+      "input": {
+        "type": "tooltip_performance",
+        "data": "Rapid hover over chart elements"
+      },
+      "expected": "Responsive tooltips",
+      "description": "Tooltip responsiveness validation",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Chart with many data points",
+        "action": "Rapidly hover over elements",
+        "verify": "Tooltips appear without delay"
+      }
+    },
+    {
+      "id": 81,
+      "category": "function",
+      "operation": "Complete workflow: Upload → Visualize → Add Insight → Export",
+      "input": {
+        "type": "complete_workflow",
+        "data": "Full user journey with 10 steps"
+      },
+      "expected": "Successful completion",
+      "description": "End-to-end workflow test",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Clean state",
+        "action": "Perform complete workflow",
+        "verify": "All operations succeed, export contains insights"
+      }
+    },
+    {
+      "id": 82,
+      "category": "function",
+      "operation": "Upload → Error → Retry → Success",
+      "input": {
+        "type": "retry_workflow",
+        "data": "Recovery from upload errors"
+      },
+      "expected": "Successful recovery",
+      "description": "Error recovery workflow",
+      "priority": "high",
+      "detailedTest": {
+        "setup": "Prepare invalid then valid data",
+        "action": "Upload invalid, then valid",
+        "verify": "Second upload succeeds, state updated"
+      }
+    },
+    {
+      "id": 83,
+      "category": "function",
+      "operation": "Multiple file uploads with insights",
+      "input": {
+        "type": "multiple_files_insights",
+        "data": "Upload 3 different workflows sequentially"
+      },
+      "expected": "Data replacement, insights updated",
+      "description": "Sequential file processing",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Prepare 3 workflow files",
+        "action": "Upload each, add insights",
+        "verify": "Final state reflects last upload"
+      }
+    },
+    {
+      "id": 84,
+      "category": "function",
+      "operation": "Visualize → Add multiple resolutions → Export",
+      "input": {
+        "type": "multiple_resolutions",
+        "data": "Add resolutions to 3 error steps"
+      },
+      "expected": "All resolutions in export",
+      "description": "Multiple resolution handling",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Workflow with 3 error steps",
+        "action": "Add resolution to each error",
+        "verify": "Export contains all 3 resolutions"
+      }
+    },
+    {
+      "id": 85,
+      "category": "function",
+      "operation": "Edit resolution → Re-export",
+      "input": {
+        "type": "edit_and_export",
+        "data": "Modify existing resolution and export again"
+      },
+      "expected": "Updated resolution in export",
+      "description": "Resolution editing and re-export",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Step with existing resolution",
+        "action": "Edit resolution, export",
+        "verify": "Export reflects updated resolution"
+      }
+    },
+    {
+      "id": 86,
+      "category": "function",
+      "operation": "Upload large workflow → Filter errors → Export",
+      "input": {
+        "type": "large_filter_export",
+        "data": "50-step workflow with 10 errors"
+      },
+      "expected": "Filtered export with only errors",
+      "description": "Large workflow filtering and export",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "50-step workflow, 10 errors",
+        "action": "Filter errors, export",
+        "verify": "Export contains only error steps"
+      }
+    },
+    {
+      "id": 87,
+      "category": "function",
+      "operation": "Text input → File upload override",
+      "input": {
+        "type": "input_override",
+        "data": "Enter text, then upload file"
+      },
+      "expected": "File data replaces text",
+      "description": "Input method priority handling",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Enter JSON in textarea",
+        "action": "Upload JSON file",
+        "verify": "File content replaces textarea content"
+      }
+    },
+    {
+      "id": 88,
+      "category": "function",
+      "operation": "Invalid file → Valid text → Visualize",
+      "input": {
+        "type": "mixed_input_recovery",
+        "data": "Upload invalid file, enter valid text"
+      },
+      "expected": "Valid text visualization",
+      "description": "Recovery from invalid file with text input",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Invalid JSON file",
+        "action": "Upload file, enter valid text, visualize",
+        "verify": "Text data visualized successfully"
+      }
+    },
+    {
+      "id": 89,
+      "category": "function",
+      "operation": "Rapid export requests",
+      "input": {
+        "type": "rapid_exports",
+        "data": "Click export button multiple times quickly"
+      },
+      "expected": "Single download, no conflicts",
+      "description": "Concurrent export request handling",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Workflow with insights",
+        "action": "Click export rapidly",
+        "verify": "Only one download triggered"
+      }
+    },
+    {
+      "id": 90,
+      "category": "function",
+      "operation": "Browser refresh during operation",
+      "input": {
+        "type": "refresh_during_operation",
+        "data": "Refresh page during chart rendering"
+      },
+      "expected": "Clean state reset",
+      "description": "Browser refresh handling",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Start visualization",
+        "action": "Refresh page immediately",
+        "verify": "Page loads cleanly, no errors"
+      }
+    },
+    {
+      "id": 91,
+      "category": "design",
+      "operation": "Button width verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".button element"
+      },
+      "expected": "80px",
+      "description": "Button width matches design specification",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Measure .button width",
+        "verify": "computed width = 80px"
+      }
+    },
+    {
+      "id": 92,
+      "category": "design",
+      "operation": "Button height verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".button element"
+      },
+      "expected": "40px",
+      "description": "Button height matches design specification",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Measure .button height",
+        "verify": "computed height = 40px"
+      }
+    },
+    {
+      "id": 93,
+      "category": "design",
+      "operation": "Left area width verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".left element"
+      },
+      "expected": "40%",
+      "description": "Left panel width matches layout specification",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Measure .left width",
+        "verify": "computed width = 40% of container"
+      }
+    },
+    {
+      "id": 94,
+      "category": "design",
+      "operation": "Right area width verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".right element"
+      },
+      "expected": "60%",
+      "description": "Right panel width matches layout specification",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Measure .right width",
+        "verify": "computed width = 60% of container"
+      }
+    },
+    {
+      "id": 95,
+      "category": "design",
+      "operation": "Button background color verification",
+      "input": {
+        "type": "css_color",
+        "data": ".button background-color"
+      },
+      "expected": "#4CAF50",
+      "description": "Button background color matches specification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Get computed background-color",
+        "verify": "color = #4CAF50 or rgb(76, 175, 80)"
+      }
+    },
+    {
+      "id": 96,
+      "category": "design",
+      "operation": "Error element color verification",
+      "input": {
+        "type": "css_color",
+        "data": ".error color"
+      },
+      "expected": "#FF0000",
+      "description": "Error text color matches specification",
+      "priority": "medium",
+      "detailedTest": {
+        "setup": "Trigger error state",
+        "action": "Get computed color",
+        "verify": "color = #FF0000 or rgb(255, 0, 0)"
+      }
+    },
+    {
+      "id": 97,
+      "category": "design",
+      "operation": "Chart background verification",
+      "input": {
+        "type": "css_color",
+        "data": ".chart background-color"
+      },
+      "expected": "#f9f9f9",
+      "description": "Chart background color matches specification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Get .chart background-color",
+        "verify": "color = #f9f9f9 or rgb(249, 249, 249)"
+      }
+    },
+    {
+      "id": 98,
+      "category": "design",
+      "operation": "Button margin verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".button margin"
+      },
+      "expected": "5px",
+      "description": "Button margin matches specification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Get computed margin",
+        "verify": "margin = 5px on all sides"
+      }
+    },
+    {
+      "id": 99,
+      "category": "design",
+      "operation": "List font size verification",
+      "input": {
+        "type": "css_measurement",
+        "data": ".list font-size"
+      },
+      "expected": "16px",
+      "description": "List font size matches specification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Get .list font-size",
+        "verify": "computed font-size = 16px"
+      }
+    },
+    {
+      "id": 100,
+      "category": "design",
+      "operation": "Chart label font size verification",
+      "input": {
+        "type": "css_measurement",
+        "data": "#chart-label font-size"
+      },
+      "expected": "24px",
+      "description": "Chart label font size matches specification",
+      "priority": "low",
+      "detailedTest": {
+        "setup": "Render page",
+        "action": "Get #chart-label font-size",
+        "verify": "computed font-size = 24px"
+      }
+    }
+  ]
+}
