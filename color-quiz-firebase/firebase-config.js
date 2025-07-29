@@ -151,8 +151,10 @@ class FirebaseConfig {
     // Firestoreにデータを保存
     async saveUserData(userId, data) {
         try {
+            console.log('💾 データ保存開始:', userId, Object.keys(data));
             const userRef = this.firebase.doc(this.firestore, 'users', userId);
             await this.firebase.setDoc(userRef, data, { merge: true });
+            console.log('✅ データ保存成功');
             return true;
         } catch (error) {
             console.error('💾 データ保存エラー:', error);
