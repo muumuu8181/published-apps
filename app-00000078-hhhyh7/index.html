@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>組み合わせ最適化パズルジェネレーター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 40px rgba(102, 126, 234, 0.6); }
+        }
+
+        .subtitle {
+            color: #b8b8b8;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            height: fit-content;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visualization-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 600px;
+            position: relative;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #e0e0e0;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5);
+        }
+
+        option {
+            background: #333;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-size: 0.9em;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .algorithm-btn {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            font-size: 14px;
+            padding: 8px 12px;
+            margin: 5px;
+            display: inline-block;
+            width: auto;
+            margin-bottom: 5px;
+        }
+
+        .algorithm-btn.active {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            cursor: crosshair;
+        }
+
+        .stats-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #a8a8a8;
+            font-size: 0.9em;
+        }
+
+        .problem-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .problem-type {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .problem-type.active {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.6);
+        }
+
+        .algorithm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .solution-display {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .node {
+            fill: #64b5f6;
+            stroke: #1976d2;
+            stroke-width: 2;
+            cursor: move;
+        }
+
+        .edge {
+            stroke: rgba(255, 255, 255, 0.6);
+            stroke-width: 1;
+        }
+
+        .edge.solution {
+            stroke: #4caf50;
+            stroke-width: 3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .node-label {
+            fill: white;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .hint-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 200px;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .hint-overlay.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .control-panel {
+                order: 2;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .algorithm-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>組み合わせ最適化パズルジェネレーター</h1>
+            <p class="subtitle">TSP・ナップサック問題を遺伝的アルゴリズムで解決</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>問題タイプ</label>
+                    <div class="problem-selector">
+                        <div class="problem-type active" data-type="tsp" onclick="selectProblemType('tsp')">
+                            TSP<br><small>巡回セールスマン</small>
+                        </div>
+                        <div class="problem-type" data-type="knapsack" onclick="selectProblemType('knapsack')">
+                            ナップサック<br><small>重量制限最適化</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="problemSize">問題サイズ</label>
+                    <div class="slider-container">
+                        <input type="range" id="problemSize" min="5" max="30" value="10" oninput="updateProblemSize()">
+                        <span class="slider-value" id="problemSizeValue">10</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="difficulty">難易度</label>
+                    <select id="difficulty" onchange="updateDifficulty()">
+                        <option value="easy">簡単</option>
+                        <option value="medium" selected>普通</option>
+                        <option value="hard">困難</option>
+                        <option value="extreme">極限</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>解法アルゴリズム</label>
+                    <div class="algorithm-grid">
+                        <button class="algorithm-btn active" data-algo="genetic" onclick="selectAlgorithm('genetic')">遺伝的</button>
+                        <button class="algorithm-btn" data-algo="ant" onclick="selectAlgorithm('ant')">蟻コロニー</button>
+                        <button class="algorithm-btn" data-algo="simulated" onclick="selectAlgorithm('simulated')">焼きなまし</button>
+                        <button class="algorithm-btn" data-algo="greedy" onclick="selectAlgorithm('greedy')">貪欲法</button>
+                    </div>
+                </div>
+
+                <button class="primary-btn" onclick="generateProblem()">新問題生成</button>
+                <button class="primary-btn" onclick="solveProblem()">自動解決</button>
+                <button class="secondary-btn" onclick="showHint()">ヒント表示</button>
+                <button class="secondary-btn" onclick="resetSolution()">リセット</button>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="solution-display" id="solutionDisplay">
+                    問題を生成して解決を開始してください。
+                </div>
+            </div>
+
+            <div class="visualization-area">
+                <svg id="canvas" width="100%" height="600"></svg>
+                <div class="hint-overlay" id="hintOverlay">
+                    <div id="hintText"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="currentScore">0</div>
+                    <div class="stat-label">現在スコア</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="bestScore">0</div>
+                    <div class="stat-label">最良スコア</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="optimality">0%</div>
+                    <div class="stat-label">最適性</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="iterations">0</div>
+                    <div class="stat-label">反復回数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="solveTime">0ms</div>
+                    <div class="stat-label">解決時間</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="difficulty-display">普通</div>
+                    <div class="stat-label">難易度</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentProblemType = 'tsp';
+        let currentAlgorithm = 'genetic';
+        let problemSize = 10;
+        let difficulty = 'medium';
+        let currentProblem = null;
+        let currentSolution = null;
+        let bestSolution = null;
+        let isRunning = false;
+        let animationId = null;
+
+        // SVG要素
+        const svg = document.getElementById('canvas');
+        const svgRect = svg.getBoundingClientRect();
+
+        // TSP問題クラス
+        class TSPProblem {
+            constructor(size, difficulty) {
+                this.size = size;
+                this.difficulty = difficulty;
+                this.nodes = this.generateNodes();
+                this.distances = this.calculateDistances();
+                this.optimalDistance = this.estimateOptimal();
+            }
+
+            generateNodes() {
+                const nodes = [];
+                const padding = 50;
+                const width = 700;
+                const height = 500;
+
+                // 難易度に応じた配置パターン
+                switch (this.difficulty) {
+                    case 'easy':
+                        // 円形配置
+                        for (let i = 0; i < this.size; i++) {
+                            const angle = (2 * Math.PI * i) / this.size;
+                            const radius = Math.min(width, height) / 3;
+                            nodes.push({
+                                id: i,
+                                x: width / 2 + radius * Math.cos(angle),
+                                y: height / 2 + radius * Math.sin(angle),
+                                label: String.fromCharCode(65 + i)
+                            });
+                        }
+                        break;
+                    case 'medium':
+                        // ランダム配置
+                        for (let i = 0; i < this.size; i++) {
+                            nodes.push({
+                                id: i,
+                                x: padding + Math.random() * (width - 2 * padding),
+                                y: padding + Math.random() * (height - 2 * padding),
+                                label: String.fromCharCode(65 + i)
+                            });
+                        }
+                        break;
+                    case 'hard':
+                        // クラスター配置
+                        const clusters = 3;
+                        for (let i = 0; i < this.size; i++) {
+                            const cluster = Math.floor(i / (this.size / clusters));
+                            const clusterX = (cluster + 1) * width / (clusters + 1);
+                            const clusterY = height / 2;
+                            nodes.push({
+                                id: i,
+                                x: clusterX + (Math.random() - 0.5) * 100,
+                                y: clusterY + (Math.random() - 0.5) * 150,
+                                label: String.fromCharCode(65 + i)
+                            });
+                        }
+                        break;
+                    case 'extreme':
+                        // 格子状配置（最も困難）
+                        const gridSize = Math.ceil(Math.sqrt(this.size));
+                        for (let i = 0; i < this.size; i++) {
+                            const row = Math.floor(i / gridSize);
+                            const col = i % gridSize;
+                            nodes.push({
+                                id: i,
+                                x: padding + col * (width - 2 * padding) / (gridSize - 1),
+                                y: padding + row * (height - 2 * padding) / (gridSize - 1),
+                                label: String.fromCharCode(65 + i)
+                            });
+                        }
+                        break;
+                }
+                return nodes;
+            }
+
+            calculateDistances() {
+                const distances = Array(this.size).fill().map(() => Array(this.size).fill(0));
+                for (let i = 0; i < this.size; i++) {
+                    for (let j = 0; j < this.size; j++) {
+                        if (i !== j) {
+                            const dx = this.nodes[i].x - this.nodes[j].x;
+                            const dy = this.nodes[i].y - this.nodes[j].y;
+                            distances[i][j] = Math.sqrt(dx * dx + dy * dy);
+                        }
+                    }
+                }
+                return distances;
+            }
+
+            estimateOptimal() {
+                // 最近傍法による近似最適解
+                let visited = new Set([0]);
+                let current = 0;
+                let totalDistance = 0;
+
+                while (visited.size < this.size) {
+                    let nearest = -1;
+                    let minDistance = Infinity;
+
+                    for (let i = 0; i < this.size; i++) {
+                        if (!visited.has(i) && this.distances[current][i] < minDistance) {
+                            minDistance = this.distances[current][i];
+                            nearest = i;
+                        }
+                    }
+
+                    visited.add(nearest);
+                    totalDistance += minDistance;
+                    current = nearest;
+                }
+
+                totalDistance += this.distances[current][0]; // 最初に戻る
+                return totalDistance;
+            }
+
+            calculateTourDistance(tour) {
+                let distance = 0;
+                for (let i = 0; i < tour.length; i++) {
+                    const from = tour[i];
+                    const to = tour[(i + 1) % tour.length];
+                    distance += this.distances[from][to];
+                }
+                return distance;
+            }
+        }
+
+        // ナップサック問題クラス
+        class KnapsackProblem {
+            constructor(size, difficulty) {
+                this.size = size;
+                this.difficulty = difficulty;
+                this.items = this.generateItems();
+                this.capacity = this.calculateCapacity();
+                this.optimalValue = this.estimateOptimal();
+            }
+
+            generateItems() {
+                const items = [];
+                const difficultyMultiplier = {
+                    'easy': 1.0,
+                    'medium': 1.2,
+                    'hard': 1.5,
+                    'extreme': 2.0
+                };
+
+                for (let i = 0; i < this.size; i++) {
+                    const baseWeight = 10 + Math.random() * 40;
+                    const baseValue = 15 + Math.random() * 35;
+                    
+                    items.push({
+                        id: i,
+                        weight: Math.round(baseWeight * difficultyMultiplier[this.difficulty]),
+                        value: Math.round(baseValue * difficultyMultiplier[this.difficulty]),
+                        label: `Item ${i + 1}`,
+                        selected: false
+                    });
+                }
+                return items;
+            }
+
+            calculateCapacity() {
+                const totalWeight = this.items.reduce((sum, item) => sum + item.weight, 0);
+                const ratios = {
+                    'easy': 0.7,
+                    'medium': 0.5,
+                    'hard': 0.4,
+                    'extreme': 0.3
+                };
+                return Math.round(totalWeight * ratios[this.difficulty]);
+            }
+
+            estimateOptimal() {
+                // 貪欲法による近似（価値/重量比順）
+                const sortedItems = [...this.items].sort((a, b) => (b.value / b.weight) - (a.value / a.weight));
+                let remainingCapacity = this.capacity;
+                let totalValue = 0;
+
+                for (const item of sortedItems) {
+                    if (item.weight <= remainingCapacity) {
+                        totalValue += item.value;
+                        remainingCapacity -= item.weight;
+                    }
+                }
+                return totalValue;
+            }
+
+            calculateSolutionValue(solution) {
+                let totalValue = 0;
+                let totalWeight = 0;
+
+                for (let i = 0; i < solution.length; i++) {
+                    if (solution[i]) {
+                        totalValue += this.items[i].value;
+                        totalWeight += this.items[i].weight;
+                    }
+                }
+
+                return totalWeight <= this.capacity ? totalValue : 0;
+            }
+        }
+
+        // 遺伝的アルゴリズム
+        class GeneticAlgorithm {
+            constructor(problem, populationSize = 100, mutationRate = 0.1, eliteSize = 20) {
+                this.problem = problem;
+                this.populationSize = populationSize;
+                this.mutationRate = mutationRate;
+                this.eliteSize = eliteSize;
+                this.population = this.initializePopulation();
+                this.generation = 0;
+                this.bestFitness = -Infinity;
+            }
+
+            initializePopulation() {
+                const population = [];
+                for (let i = 0; i < this.populationSize; i++) {
+                    if (currentProblemType === 'tsp') {
+                        const individual = Array.from({length: this.problem.size}, (_, i) => i);
+                        // Fisher-Yates shuffle
+                        for (let j = individual.length - 1; j > 0; j--) {
+                            const k = Math.floor(Math.random() * (j + 1));
+                            [individual[j], individual[k]] = [individual[k], individual[j]];
+                        }
+                        population.push(individual);
+                    } else {
+                        const individual = Array.from({length: this.problem.size}, () => Math.random() < 0.5);
+                        population.push(individual);
+                    }
+                }
+                return population;
+            }
+
+            fitness(individual) {
+                if (currentProblemType === 'tsp') {
+                    const distance = this.problem.calculateTourDistance(individual);
+                    return 1 / (1 + distance); // 距離が短いほど高い適応度
+                } else {
+                    const value = this.problem.calculateSolutionValue(individual);
+                    return value;
+                }
+            }
+
+            selection() {
+                const fitnessScores = this.population.map(ind => this.fitness(ind));
+                const sortedIndices = fitnessScores
+                    .map((fitness, index) => ({ fitness, index }))
+                    .sort((a, b) => b.fitness - a.fitness);
+
+                // エリート選択 + トーナメント選択
+                const selected = [];
+                
+                // エリート保存
+                for (let i = 0; i < this.eliteSize; i++) {
+                    selected.push([...this.population[sortedIndices[i].index]]);
+                }
+
+                // 残りはトーナメント選択
+                while (selected.length < this.populationSize) {
+                    const tournament = [];
+                    for (let i = 0; i < 3; i++) {
+                        const randomIndex = Math.floor(Math.random() * this.population.length);
+                        tournament.push({
+                            individual: this.population[randomIndex],
+                            fitness: fitnessScores[randomIndex]
+                        });
+                    }
+                    tournament.sort((a, b) => b.fitness - a.fitness);
+                    selected.push([...tournament[0].individual]);
+                }
+
+                this.population = selected;
+            }
+
+            crossover() {
+                const newPopulation = [];
+                
+                // エリートをそのまま保存
+                for (let i = 0; i < this.eliteSize; i++) {
+                    newPopulation.push([...this.population[i]]);
+                }
+
+                // 残りを交叉で生成
+                while (newPopulation.length < this.populationSize) {
+                    const parent1 = this.population[Math.floor(Math.random() * this.eliteSize)];
+                    const parent2 = this.population[Math.floor(Math.random() * this.eliteSize)];
+                    
+                    let offspring;
+                    if (currentProblemType === 'tsp') {
+                        offspring = this.orderCrossover(parent1, parent2);
+                    } else {
+                        offspring = this.uniformCrossover(parent1, parent2);
+                    }
+                    
+                    newPopulation.push(offspring);
+                }
+
+                this.population = newPopulation;
+            }
+
+            orderCrossover(parent1, parent2) {
+                const size = parent1.length;
+                const start = Math.floor(Math.random() * size);
+                const end = Math.floor(Math.random() * size);
+                const [s, e] = start < end ? [start, end] : [end, start];
+                
+                const offspring = new Array(size).fill(-1);
+                
+                // 部分的にコピー
+                for (let i = s; i <= e; i++) {
+                    offspring[i] = parent1[i];
+                }
+                
+                // 残りを順序を保って埋める
+                let currentIndex = (e + 1) % size;
+                for (let i = 0; i < size; i++) {
+                    const gene = parent2[(e + 1 + i) % size];
+                    if (!offspring.includes(gene)) {
+                        offspring[currentIndex] = gene;
+                        currentIndex = (currentIndex + 1) % size;
+                    }
+                }
+                
+                return offspring;
+            }
+
+            uniformCrossover(parent1, parent2) {
+                const offspring = [];
+                for (let i = 0; i < parent1.length; i++) {
+                    offspring.push(Math.random() < 0.5 ? parent1[i] : parent2[i]);
+                }
+                return offspring;
+            }
+
+            mutation() {
+                for (let i = this.eliteSize; i < this.population.length; i++) {
+                    if (Math.random() < this.mutationRate) {
+                        if (currentProblemType === 'tsp') {
+                            this.swapMutation(this.population[i]);
+                        } else {
+                            this.bitFlipMutation(this.population[i]);
+                        }
+                    }
+                }
+            }
+
+            swapMutation(individual) {
+                const i = Math.floor(Math.random() * individual.length);
+                const j = Math.floor(Math.random() * individual.length);
+                [individual[i], individual[j]] = [individual[j], individual[i]];
+            }
+
+            bitFlipMutation(individual) {
+                const index = Math.floor(Math.random() * individual.length);
+                individual[index] = !individual[index];
+            }
+
+            evolve() {
+                this.selection();
+                this.crossover();
+                this.mutation();
+                this.generation++;
+
+                // 最良解を更新
+                const currentBest = this.getBestIndividual();
+                const currentFitness = this.fitness(currentBest);
+                if (currentFitness > this.bestFitness) {
+                    this.bestFitness = currentFitness;
+                    bestSolution = [...currentBest];
+                    return true; // 改善あり
+                }
+                return false; // 改善なし
+            }
+
+            getBestIndividual() {
+                let best = this.population[0];
+                let bestFitness = this.fitness(best);
+
+                for (const individual of this.population) {
+                    const fitness = this.fitness(individual);
+                    if (fitness > bestFitness) {
+                        bestFitness = fitness;
+                        best = individual;
+                    }
+                }
+                return best;
+            }
+        }
+
+        // UI制御関数
+        function selectProblemType(type) {
+            currentProblemType = type;
+            document.querySelectorAll('.problem-type').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            generateProblem();
+        }
+
+        function selectAlgorithm(algo) {
+            currentAlgorithm = algo;
+            document.querySelectorAll('.algorithm-btn').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-algo="${algo}"]`).classList.add('active');
+        }
+
+        function updateProblemSize() {
+            problemSize = parseInt(document.getElementById('problemSize').value);
+            document.getElementById('problemSizeValue').textContent = problemSize;
+            generateProblem();
+        }
+
+        function updateDifficulty() {
+            difficulty = document.getElementById('difficulty').value;
+            document.getElementById('difficulty-display').textContent = 
+                {'easy': '簡単', 'medium': '普通', 'hard': '困難', 'extreme': '極限'}[difficulty];
+            generateProblem();
+        }
+
+        function generateProblem() {
+            if (isRunning) return;
+
+            if (currentProblemType === 'tsp') {
+                currentProblem = new TSPProblem(problemSize, difficulty);
+            } else {
+                currentProblem = new KnapsackProblem(problemSize, difficulty);
+            }
+
+            currentSolution = null;
+            bestSolution = null;
+            updateVisualization();
+            updateStats();
+            updateSolutionDisplay("新しい問題が生成されました。解決を開始してください。");
+        }
+
+        function solveProblem() {
+            if (isRunning || !currentProblem) return;
+
+            isRunning = true;
+            const startTime = performance.now();
+            
+            if (currentAlgorithm === 'genetic') {
+                const ga = new GeneticAlgorithm(currentProblem);
+                let iterations = 0;
+                let noImprovementCount = 0;
+                const maxIterations = 1000;
+                const maxNoImprovement = 50;
+
+                const evolveStep = () => {
+                    const improved = ga.evolve();
+                    iterations++;
+                    
+                    if (improved) {
+                        noImprovementCount = 0;
+                    } else {
+                        noImprovementCount++;
+                    }
+
+                    currentSolution = ga.getBestIndividual();
+                    updateVisualization();
+                    updateStats(iterations, performance.now() - startTime);
+                    updateProgress(iterations / maxIterations * 100);
+
+                    if (iterations < maxIterations && noImprovementCount < maxNoImprovement) {
+                        setTimeout(evolveStep, 10);
+                    } else {
+                        isRunning = false;
+                        updateSolutionDisplay(`解決完了！\n反復回数: ${iterations}\n収束理由: ${noImprovementCount >= maxNoImprovement ? '改善停止' : '最大反復数到達'}`);
+                    }
+                };
+
+                evolveStep();
+            }
+        }
+
+        function showHint() {
+            if (!currentProblem) return;
+
+            let hintText = "";
+            if (currentProblemType === 'tsp') {
+                hintText = `TSPのヒント:\n・最近傍法: 常に最も近い未訪問都市を選ぶ\n・2-opt改善: 2つのエッジを交換して距離短縮を試す\n・現在の推定最適距離: ${currentProblem.optimalDistance.toFixed(1)}`;
+            } else {
+                hintText = `ナップサックのヒント:\n・価値/重量比の高いアイテムを優先\n・容量: ${currentProblem.capacity}\n・推定最適価値: ${currentProblem.optimalValue}`;
+            }
+
+            document.getElementById('hintText').textContent = hintText;
+            document.getElementById('hintOverlay').classList.add('show');
+            setTimeout(() => {
+                document.getElementById('hintOverlay').classList.remove('show');
+            }, 5000);
+        }
+
+        function resetSolution() {
+            if (isRunning) return;
+            currentSolution = null;
+            bestSolution = null;
+            updateVisualization();
+            updateStats();
+            updateProgress(0);
+            updateSolutionDisplay("リセットしました。");
+        }
+
+        function updateVisualization() {
+            const svg = document.getElementById('canvas');
+            svg.innerHTML = '';
+
+            if (!currentProblem) return;
+
+            if (currentProblemType === 'tsp') {
+                drawTSPVisualization();
+            } else {
+                drawKnapsackVisualization();
+            }
+        }
+
+        function drawTSPVisualization() {
+            const svg = document.getElementById('canvas');
+            
+            // エッジを描画（解がある場合）
+            if (currentSolution) {
+                for (let i = 0; i < currentSolution.length; i++) {
+                    const from = currentProblem.nodes[currentSolution[i]];
+                    const to = currentProblem.nodes[currentSolution[(i + 1) % currentSolution.length]];
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', from.x);
+                    line.setAttribute('y1', from.y);
+                    line.setAttribute('x2', to.x);
+                    line.setAttribute('y2', to.y);
+                    line.setAttribute('class', 'edge solution');
+                    svg.appendChild(line);
+                }
+            }
+
+            // ノードを描画
+            currentProblem.nodes.forEach(node => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', node.x);
+                circle.setAttribute('cy', node.y);
+                circle.setAttribute('r', 15);
+                circle.setAttribute('class', 'node');
+                svg.appendChild(circle);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', node.x);
+                text.setAttribute('y', node.y);
+                text.setAttribute('class', 'node-label');
+                text.textContent = node.label;
+                svg.appendChild(text);
+            });
+        }
+
+        function drawKnapsackVisualization() {
+            const svg = document.getElementById('canvas');
+            const itemWidth = 60;
+            const itemHeight = 40;
+            const cols = Math.ceil(Math.sqrt(currentProblem.size));
+            const rows = Math.ceil(currentProblem.size / cols);
+            
+            const startX = 50;
+            const startY = 50;
+            const spacingX = 80;
+            const spacingY = 60;
+
+            currentProblem.items.forEach((item, index) => {
+                const row = Math.floor(index / cols);
+                const col = index % cols;
+                const x = startX + col * spacingX;
+                const y = startY + row * spacingY;
+
+                // アイテム背景
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', itemWidth);
+                rect.setAttribute('height', itemHeight);
+                rect.setAttribute('rx', 8);
+                
+                const isSelected = currentSolution && currentSolution[index];
+                rect.setAttribute('fill', isSelected ? '#4caf50' : 'rgba(255, 255, 255, 0.1)');
+                rect.setAttribute('stroke', isSelected ? '#388e3c' : 'rgba(255, 255, 255, 0.3)');
+                rect.setAttribute('stroke-width', 2);
+                
+                svg.appendChild(rect);
+
+                // アイテム情報
+                const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text1.setAttribute('x', x + itemWidth / 2);
+                text1.setAttribute('y', y + 15);
+                text1.setAttribute('class', 'node-label');
+                text1.setAttribute('font-size', '10');
+                text1.textContent = `V:${item.value}`;
+                svg.appendChild(text1);
+
+                const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text2.setAttribute('x', x + itemWidth / 2);
+                text2.setAttribute('y', y + 30);
+                text2.setAttribute('class', 'node-label');
+                text2.setAttribute('font-size', '10');
+                text2.textContent = `W:${item.weight}`;
+                svg.appendChild(text2);
+            });
+
+            // ナップサック表示
+            const knapsackX = startX + cols * spacingX + 50;
+            const knapsackY = startY;
+            const knapsackWidth = 120;
+            const knapsackHeight = 200;
+
+            const knapsackRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            knapsackRect.setAttribute('x', knapsackX);
+            knapsackRect.setAttribute('y', knapsackY);
+            knapsackRect.setAttribute('width', knapsackWidth);
+            knapsackRect.setAttribute('height', knapsackHeight);
+            knapsackRect.setAttribute('fill', 'rgba(139, 69, 19, 0.3)');
+            knapsackRect.setAttribute('stroke', '#8b4513');
+            knapsackRect.setAttribute('stroke-width', 3);
+            knapsackRect.setAttribute('rx', 10);
+            svg.appendChild(knapsackRect);
+
+            // 容量表示
+            if (currentSolution) {
+                const usedWeight = currentProblem.items.reduce((sum, item, index) => 
+                    sum + (currentSolution[index] ? item.weight : 0), 0);
+                const fillHeight = (usedWeight / currentProblem.capacity) * knapsackHeight;
+                
+                const fillRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                fillRect.setAttribute('x', knapsackX + 5);
+                fillRect.setAttribute('y', knapsackY + knapsackHeight - fillHeight);
+                fillRect.setAttribute('width', knapsackWidth - 10);
+                fillRect.setAttribute('height', fillHeight);
+                fillRect.setAttribute('fill', usedWeight <= currentProblem.capacity ? '#4caf50' : '#f44336');
+                fillRect.setAttribute('opacity', 0.7);
+                svg.appendChild(fillRect);
+            }
+
+            // 容量ラベル
+            const capacityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            capacityText.setAttribute('x', knapsackX + knapsackWidth / 2);
+            capacityText.setAttribute('y', knapsackY + knapsackHeight + 20);
+            capacityText.setAttribute('class', 'node-label');
+            capacityText.textContent = `容量: ${currentProblem.capacity}`;
+            svg.appendChild(capacityText);
+        }
+
+        function updateStats(iterations = 0, solveTime = 0) {
+            let currentScore = 0;
+            let bestScore = 0;
+            let optimality = 0;
+
+            if (currentProblem && currentSolution) {
+                if (currentProblemType === 'tsp') {
+                    currentScore = Math.round(currentProblem.calculateTourDistance(currentSolution));
+                    bestScore = bestSolution ? Math.round(currentProblem.calculateTourDistance(bestSolution)) : currentScore;
+                    optimality = Math.round((currentProblem.optimalDistance / bestScore) * 100);
+                } else {
+                    currentScore = currentProblem.calculateSolutionValue(currentSolution);
+                    bestScore = bestSolution ? currentProblem.calculateSolutionValue(bestSolution) : currentScore;
+                    optimality = Math.round((bestScore / currentProblem.optimalValue) * 100);
+                }
+            }
+
+            document.getElementById('currentScore').textContent = currentScore;
+            document.getElementById('bestScore').textContent = bestScore;
+            document.getElementById('optimality').textContent = `${Math.min(100, optimality)}%`;
+            document.getElementById('iterations').textContent = iterations;
+            document.getElementById('solveTime').textContent = `${Math.round(solveTime)}ms`;
+        }
+
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        function updateSolutionDisplay(message) {
+            document.getElementById('solutionDisplay').textContent = message;
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            generateProblem();
+        });
+    </script>
+</body>
+</html>
