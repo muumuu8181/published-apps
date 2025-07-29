@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数値積分法比較ツール - Numerical Integration Methods Comparison Tool</title>
+    <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #1e3c72;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        .control-group h3 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .input-row label {
+            min-width: 80px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+
+        .input-row input, .input-row select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .function-input {
+            width: 100%;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 3px;
+            width: calc(50% - 6px);
+        }
+
+        .btn-full {
+            width: calc(100% - 6px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .visualization-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .plot-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .function-plot, .convergence-plot {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .results-panel {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .method-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .method-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+        }
+
+        .method-card.trapezoidal { border-left-color: #e74c3c; }
+        .method-card.simpson { border-left-color: #3498db; }
+        .method-card.monte-carlo { border-left-color: #f39c12; }
+        .method-card.gauss { border-left-color: #27ae60; }
+
+        .method-card h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .benchmark-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+
+        .benchmark-table th,
+        .benchmark-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .benchmark-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .benchmark-table .best {
+            background: #d4edda;
+            font-weight: bold;
+        }
+
+        .progress-container {
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .latex-output {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+
+        .error-display {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e3c72;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .control-panel {
+                max-height: 300px;
+                height: auto;
+            }
+            
+            .plot-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 数値積分法比較ツール</h1>
+            <p>台形・Simpson・Monte Carlo・Gauss求積法による高精度数値積分</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>📝 関数入力</h3>
+                <div class="input-row">
+                    <label>f(x) =</label>
+                    <input type="text" id="functionInput" class="function-input" 
+                           value="x^2" placeholder="例: sin(x), exp(-x^2), 1/(1+x^2)">
+                </div>
+                <div class="input-row">
+                    <label>下限 a:</label>
+                    <input type="number" id="lowerBound" value="0" step="0.1">
+                </div>
+                <div class="input-row">
+                    <label>上限 b:</label>
+                    <input type="number" id="upperBound" value="1" step="0.1">
+                </div>
+                <div class="input-row">
+                    <label>理論値:</label>
+                    <input type="number" id="trueValue" value="" step="any" placeholder="既知の場合">
+                </div>
+                <button class="btn btn-primary btn-full" onclick="parseFunction()">🔄 関数解析</button>
+            </div>
+
+            <div class="control-group">
+                <h3>⚙️ 積分設定</h3>
+                <div class="input-row">
+                    <label>分割数 n:</label>
+                    <input type="number" id="divisions" value="1000" min="10" max="1000000">
+                </div>
+                <div class="input-row">
+                    <label>Monte Carlo試行数:</label>
+                    <input type="number" id="mcSamples" value="10000" min="1000" max="1000000">
+                </div>
+                <div class="input-row">
+                    <label>Gauss次数:</label>
+                    <select id="gaussOrder">
+                        <option value="2">2次</option>
+                        <option value="3">3次</option>
+                        <option value="4">4次</option>
+                        <option value="5" selected>5次</option>
+                        <option value="8">8次</option>
+                        <option value="10">10次</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>目標誤差:</label>
+                    <input type="number" id="targetError" value="0.000001" step="any" min="0">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🚀 実行制御</h3>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button class="btn btn-success" onclick="runAllMethods()">▶️ 全手法実行</button>
+                    <button class="btn btn-warning" onclick="runConvergenceAnalysis()">📈 収束解析</button>
+                    <button class="btn btn-primary" onclick="runBenchmark()">🏆 ベンチマーク</button>
+                    <button class="btn btn-secondary" onclick="clearResults()">🗑️ クリア</button>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                    <div id="progressText" style="font-size: 0.8em; margin-top: 5px;">準備完了</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>📚 プリセット関数</h3>
+                <div class="preset-grid">
+                    <button class="preset-btn" onclick="loadPreset('polynomial')">多項式</button>
+                    <button class="preset-btn" onclick="loadPreset('trigonometric')">三角関数</button>
+                    <button class="preset-btn" onclick="loadPreset('exponential')">指数関数</button>
+                    <button class="preset-btn" onclick="loadPreset('logarithmic')">対数関数</button>
+                    <button class="preset-btn" onclick="loadPreset('rational')">有理関数</button>
+                    <button class="preset-btn" onclick="loadPreset('gaussian')">ガウス関数</button>
+                    <button class="preset-btn" onclick="loadPreset('oscillatory')">振動関数</button>
+                    <button class="preset-btn" onclick="loadPreset('divergent')">発散関数</button>
+                    <button class="preset-btn" onclick="loadPreset('step')">ステップ関数</button>
+                    <button class="preset-btn" onclick="loadPreset('sinc')">sinc関数</button>
+                    <button class="preset-btn" onclick="loadPreset('bessel')">ベッセル型</button>
+                    <button class="preset-btn" onclick="loadPreset('gamma')">ガンマ型</button>
+                    <button class="preset-btn" onclick="loadPreset('cauchy')">コーシー分布</button>
+                    <button class="preset-btn" onclick="loadPreset('weibull')">ワイブル分布</button>
+                    <button class="preset-btn" onclick="loadPreset('custom')">カスタム</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>📤 出力・共有</h3>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="exportResults()">💾 結果保存</button>
+                    <button class="btn btn-primary" onclick="generateLatex()">📄 LaTeX出力</button>
+                    <button class="btn btn-warning" onclick="shareResults()">🔗 結果共有</button>
+                    <button class="btn btn-secondary" onclick="importResults()">📁 結果読込</button>
+                </div>
+                <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="handleFileImport(event)">
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="plot-container">
+                <div class="function-plot">
+                    <div id="functionPlot" style="width: 100%; height: 100%;"></div>
+                    <div class="loading-overlay" id="functionLoading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                <div class="convergence-plot">
+                    <div id="convergencePlot" style="width: 100%; height: 100%;"></div>
+                    <div class="loading-overlay" id="convergenceLoading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results-panel">
+                <div class="method-results" id="methodResults">
+                    <!-- Results will be inserted here -->
+                </div>
+                
+                <div id="benchmarkResults" style="display: none;">
+                    <h4>🏆 ベンチマーク結果</h4>
+                    <table class="benchmark-table" id="benchmarkTable">
+                        <!-- Benchmark table will be inserted here -->
+                    </table>
+                </div>
+                
+                <div id="latexOutput" style="display: none;">
+                    <h4>📄 LaTeX出力</h4>
+                    <div class="latex-output" id="latexContent"></div>
+                    <button class="btn btn-primary" onclick="copyLatex()">📋 コピー</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数値積分法比較ツール - メインクラス
+        class NumericalIntegrationTool {
+            constructor() {
+                this.currentFunction = null;
+                this.functionString = '';
+                this.lowerBound = 0;
+                this.upperBound = 1;
+                this.trueValue = null;
+                this.results = {};
+                this.convergenceData = {};
+                
+                // プリセット関数定義
+                this.presets = this.initializePresets();
+                
+                // 初期化
+                this.initializePlots();
+                this.parseFunction();
+            }
+
+            initializePresets() {
+                return {
+                    polynomial: { func: 'x^3 - 2*x^2 + x + 1', a: 0, b: 2, exact: 10/3 },
+                    trigonometric: { func: 'sin(x)', a: 0, b: Math.PI, exact: 2 },
+                    exponential: { func: 'exp(-x)', a: 0, b: 2, exact: 1 - Math.exp(-2) },
+                    logarithmic: { func: 'log(x+1)', a: 0, b: 1, exact: 2 * Math.log(2) - 1 },
+                    rational: { func: '1/(1+x^2)', a: -1, b: 1, exact: Math.PI/2 },
+                    gaussian: { func: 'exp(-x^2)', a: -2, b: 2, exact: Math.sqrt(Math.PI) * 0.995 },
+                    oscillatory: { func: 'sin(10*x)*exp(-x)', a: 0, b: Math.PI, exact: null },
+                    divergent: { func: '1/sqrt(x)', a: 0.001, b: 1, exact: 2 * (1 - Math.sqrt(0.001)) },
+                    step: { func: 'x > 0.5 ? 1 : 0', a: 0, b: 1, exact: 0.5 },
+                    sinc: { func: 'sin(x)/x', a: 0.1, b: 5, exact: null },
+                    bessel: { func: 'sin(x)/sqrt(x)', a: 0.1, b: 10, exact: null },
+                    gamma: { func: 'x^0.5 * exp(-x)', a: 0, b: 5, exact: null },
+                    cauchy: { func: '1/(1+x^2)', a: -5, b: 5, exact: Math.PI },
+                    weibull: { func: '2*x*exp(-x^2)', a: 0, b: 3, exact: 1 - Math.exp(-9) },
+                    custom: { func: 'x^2 * sin(x)', a: 0, b: Math.PI, exact: Math.PI - 2 }
+                };
+            }
+
+            initializePlots() {
+                // 初期プロット設定
+                this.updateFunctionPlot();
+                this.updateConvergencePlot();
+            }
+
+            parseFunction() {
+                const input = document.getElementById('functionInput').value;
+                this.functionString = input;
+                this.lowerBound = parseFloat(document.getElementById('lowerBound').value);
+                this.upperBound = parseFloat(document.getElementById('upperBound').value);
+                this.trueValue = document.getElementById('trueValue').value ? 
+                    parseFloat(document.getElementById('trueValue').value) : null;
+
+                try {
+                    // 関数文字列をJavaScript関数に変換
+                    this.currentFunction = this.createFunction(input);
+                    this.updateFunctionPlot();
+                    document.getElementById('functionInput').style.borderColor = '#27ae60';
+                } catch (error) {
+                    document.getElementById('functionInput').style.borderColor = '#e74c3c';
+                    console.error('Function parsing error:', error);
+                }
+            }
+
+            createFunction(expr) {
+                // 数学関数の変換
+                let jsExpr = expr
+                    .replace(/\^/g, '**')
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/exp/g, 'Math.exp')
+                    .replace(/log/g, 'Math.log')
+                    .replace(/sqrt/g, 'Math.sqrt')
+                    .replace(/abs/g, 'Math.abs')
+                    .replace(/pi/g, 'Math.PI')
+                    .replace(/e/g, 'Math.E');
+
+                return new Function('x', `return ${jsExpr}`);
+            }
+
+            updateFunctionPlot() {
+                if (!this.currentFunction) return;
+
+                const container = document.getElementById('functionPlot');
+                container.innerHTML = '';
+
+                try {
+                    // 積分領域のシェーディング用データ
+                    const n = 200;
+                    const dx = (this.upperBound - this.lowerBound) / n;
+                    const fillData = [];
+                    
+                    for (let i = 0; i <= n; i++) {
+                        const x = this.lowerBound + i * dx;
+                        const y = this.currentFunction(x);
+                        fillData.push([x, Math.max(0, y)]);
+                    }
+
+                    // プロット範囲を拡張
+                    const range = this.upperBound - this.lowerBound;
+                    const plotMin = this.lowerBound - range * 0.2;
+                    const plotMax = this.upperBound + range * 0.2;
+
+                    functionPlot({
+                        target: '#functionPlot',
+                        width: container.clientWidth,
+                        height: container.clientHeight,
+                        grid: true,
+                        xAxis: { domain: [plotMin, plotMax] },
+                        data: [
+                            {
+                                fn: this.functionString,
+                                color: '#1e3c72',
+                                graphType: 'polyline'
+                            },
+                            {
+                                points: fillData,
+                                fnType: 'points',
+                                graphType: 'scatter',
+                                color: '#3498db',
+                                attr: { fill: 'rgba(52, 152, 219, 0.3)' }
+                            }
+                        ]
+                    });
+                } catch (error) {
+                    container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #e74c3c;">関数プロットエラー</div>';
+                }
+            }
+
+            updateConvergencePlot() {
+                if (Object.keys(this.convergenceData).length === 0) {
+                    const container = document.getElementById('convergencePlot');
+                    container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #7f8c8d;">収束解析結果がここに表示されます</div>';
+                    return;
+                }
+
+                const container = document.getElementById('convergencePlot');
+                container.innerHTML = '';
+
+                try {
+                    const datasets = [];
+                    const colors = { trapezoidal: '#e74c3c', simpson: '#3498db', 'monte-carlo': '#f39c12', gauss: '#27ae60' };
+                    
+                    Object.keys(this.convergenceData).forEach(method => {
+                        const data = this.convergenceData[method];
+                        if (data && data.length > 0) {
+                            datasets.push({
+                                points: data,
+                                fnType: 'points',
+                                graphType: 'polyline',
+                                color: colors[method] || '#95a5a6'
+                            });
+                        }
+                    });
+
+                    if (datasets.length > 0) {
+                        functionPlot({
+                            target: '#convergencePlot',
+                            width: container.clientWidth,
+                            height: container.clientHeight,
+                            grid: true,
+                            title: '収束解析',
+                            xAxis: { label: '分割数 (log)', type: 'log' },
+                            yAxis: { label: '誤差 (log)', type: 'log' },
+                            data: datasets
+                        });
+                    }
+                } catch (error) {
+                    container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #e74c3c;">収束プロットエラー</div>';
+                }
+            }
+
+            // 台形公式
+            trapezoidalRule(n) {
+                const h = (this.upperBound - this.lowerBound) / n;
+                let sum = 0.5 * (this.currentFunction(this.lowerBound) + this.currentFunction(this.upperBound));
+                
+                for (let i = 1; i < n; i++) {
+                    const x = this.lowerBound + i * h;
+                    sum += this.currentFunction(x);
+                }
+                
+                return h * sum;
+            }
+
+            // Simpson公式
+            simpsonRule(n) {
+                if (n % 2 !== 0) n++; // 偶数にする
+                const h = (this.upperBound - this.lowerBound) / n;
+                let sum = this.currentFunction(this.lowerBound) + this.currentFunction(this.upperBound);
+                
+                for (let i = 1; i < n; i++) {
+                    const x = this.lowerBound + i * h;
+                    const multiplier = i % 2 === 0 ? 2 : 4;
+                    sum += multiplier * this.currentFunction(x);
+                }
+                
+                return (h / 3) * sum;
+            }
+
+            // Monte Carlo法
+            monteCarloIntegration(samples) {
+                const range = this.upperBound - this.lowerBound;
+                let sum = 0;
+                
+                for (let i = 0; i < samples; i++) {
+                    const x = this.lowerBound + Math.random() * range;
+                    sum += this.currentFunction(x);
+                }
+                
+                return (range * sum) / samples;
+            }
+
+            // Gauss求積法
+            gaussQuadrature(order) {
+                // Gauss-Legendre求積点と重み（[-1,1]区間）
+                const nodes = {
+                    2: [-0.5773502692, 0.5773502692],
+                    3: [-0.7745966692, 0, 0.7745966692],
+                    4: [-0.8611363116, -0.3399810436, 0.3399810436, 0.8611363116],
+                    5: [-0.9061798459, -0.5384693101, 0, 0.5384693101, 0.9061798459],
+                    8: [-0.9602898565, -0.7966664774, -0.5255324099, -0.1834346425, 
+                        0.1834346425, 0.5255324099, 0.7966664774, 0.9602898565],
+                    10: [-0.9739065285, -0.8650633667, -0.6794095683, -0.4333953941, -0.1488743390,
+                         0.1488743390, 0.4333953941, 0.6794095683, 0.8650633667, 0.9739065285]
+                };
+                
+                const weights = {
+                    2: [1, 1],
+                    3: [0.5555555556, 0.8888888889, 0.5555555556],
+                    4: [0.3478548451, 0.6521451549, 0.6521451549, 0.3478548451],
+                    5: [0.2369268851, 0.4786286705, 0.5688888889, 0.4786286705, 0.2369268851],
+                    8: [0.1012285363, 0.2223810345, 0.3137066459, 0.3626837834,
+                        0.3626837834, 0.3137066459, 0.2223810345, 0.1012285363],
+                    10: [0.0666713443, 0.1494513492, 0.2190863625, 0.2692667193, 0.2955242247,
+                         0.2955242247, 0.2692667193, 0.2190863625, 0.1494513492, 0.0666713443]
+                };
+
+                const xi = nodes[order];
+                const wi = weights[order];
+                
+                if (!xi || !wi) {
+                    throw new Error(`Unsupported Gauss quadrature order: ${order}`);
+                }
+
+                let sum = 0;
+                const a = this.lowerBound;
+                const b = this.upperBound;
+                
+                for (let i = 0; i < xi.length; i++) {
+                    // [-1,1]から[a,b]への変換
+                    const x = 0.5 * ((b - a) * xi[i] + (b + a));
+                    sum += wi[i] * this.currentFunction(x);
+                }
+                
+                return 0.5 * (b - a) * sum;
+            }
+
+            async runAllMethods() {
+                if (!this.currentFunction) {
+                    alert('まず関数を設定してください');
+                    return;
+                }
+
+                this.showProgress('積分計算を実行中...', 0);
+                const n = parseInt(document.getElementById('divisions').value);
+                const mcSamples = parseInt(document.getElementById('mcSamples').value);
+                const gaussOrder = parseInt(document.getElementById('gaussOrder').value);
+
+                const startTime = performance.now();
+                
+                try {
+                    // 各手法を実行
+                    this.showProgress('台形公式を実行中...', 25);
+                    await this.delay(100);
+                    const trapResult = this.trapezoidalRule(n);
+                    
+                    this.showProgress('Simpson公式を実行中...', 50);
+                    await this.delay(100);
+                    const simpResult = this.simpsonRule(n);
+                    
+                    this.showProgress('Monte Carlo法を実行中...', 75);
+                    await this.delay(100);
+                    const mcResult = this.monteCarloIntegration(mcSamples);
+                    
+                    this.showProgress('Gauss求積法を実行中...', 90);
+                    await this.delay(100);
+                    const gaussResult = this.gaussQuadrature(gaussOrder);
+
+                    const endTime = performance.now();
+                    const totalTime = endTime - startTime;
+
+                    // 結果を保存
+                    this.results = {
+                        trapezoidal: { value: trapResult, error: this.calculateError(trapResult), time: totalTime / 4 },
+                        simpson: { value: simpResult, error: this.calculateError(simpResult), time: totalTime / 4 },
+                        'monte-carlo': { value: mcResult, error: this.calculateError(mcResult), time: totalTime / 4 },
+                        gauss: { value: gaussResult, error: this.calculateError(gaussResult), time: totalTime / 4 }
+                    };
+
+                    this.displayResults();
+                    this.showProgress('計算完了', 100);
+                    
+                    setTimeout(() => {
+                        this.hideProgress();
+                    }, 1000);
+
+                } catch (error) {
+                    this.showProgress('エラーが発生しました', 0);
+                    console.error('Integration error:', error);
+                }
+            }
+
+            async runConvergenceAnalysis() {
+                if (!this.currentFunction) {
+                    alert('まず関数を設定してください');
+                    return;
+                }
+
+                this.showProgress('収束解析を実行中...', 0);
+                this.convergenceData = {};
+
+                const divisions = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+                const methods = ['trapezoidal', 'simpson'];
+
+                for (let i = 0; i < methods.length; i++) {
+                    const method = methods[i];
+                    this.convergenceData[method] = [];
+                    
+                    for (let j = 0; j < divisions.length; j++) {
+                        const n = divisions[j];
+                        this.showProgress(`${method}法 n=${n}`, (i * divisions.length + j) / (methods.length * divisions.length) * 100);
+                        
+                        let result;
+                        if (method === 'trapezoidal') {
+                            result = this.trapezoidalRule(n);
+                        } else if (method === 'simpson') {
+                            result = this.simpsonRule(n);
+                        }
+                        
+                        const error = Math.abs(this.calculateError(result));
+                        if (error > 0) {
+                            this.convergenceData[method].push([n, error]);
+                        }
+                        
+                        await this.delay(50);
+                    }
+                }
+
+                this.updateConvergencePlot();
+                this.showProgress('収束解析完了', 100);
+                
+                setTimeout(() => {
+                    this.hideProgress();
+                }, 1000);
+            }
+
+            async runBenchmark() {
+                if (!this.currentFunction) {
+                    alert('まず関数を設定してください');
+                    return;
+                }
+
+                this.showProgress('ベンチマーク実行中...', 0);
+                
+                const testCases = [
+                    { n: 100, mc: 10000 },
+                    { n: 500, mc: 50000 },
+                    { n: 1000, mc: 100000 },
+                    { n: 5000, mc: 500000 }
+                ];
+
+                const benchmarkResults = [];
+
+                for (let i = 0; i < testCases.length; i++) {
+                    const testCase = testCases[i];
+                    this.showProgress(`ベンチマーク ${i + 1}/${testCases.length}`, (i / testCases.length) * 100);
+                    
+                    const results = {};
+                    
+                    // 各手法の実行時間と精度を測定
+                    const methods = [
+                        { name: 'trapezoidal', func: () => this.trapezoidalRule(testCase.n) },
+                        { name: 'simpson', func: () => this.simpsonRule(testCase.n) },
+                        { name: 'monte-carlo', func: () => this.monteCarloIntegration(testCase.mc) },
+                        { name: 'gauss', func: () => this.gaussQuadrature(5) }
+                    ];
+
+                    for (const method of methods) {
+                        const startTime = performance.now();
+                        const result = method.func();
+                        const endTime = performance.now();
+                        
+                        results[method.name] = {
+                            value: result,
+                            error: Math.abs(this.calculateError(result)),
+                            time: endTime - startTime
+                        };
+                    }
+                    
+                    benchmarkResults.push({
+                        case: `n=${testCase.n}`,
+                        results: results
+                    });
+                    
+                    await this.delay(100);
+                }
+
+                this.displayBenchmarkResults(benchmarkResults);
+                this.showProgress('ベンチマーク完了', 100);
+                
+                setTimeout(() => {
+                    this.hideProgress();
+                }, 1000);
+            }
+
+            calculateError(result) {
+                if (this.trueValue !== null) {
+                    return Math.abs(result - this.trueValue);
+                }
+                return null;
+            }
+
+            displayResults() {
+                const container = document.getElementById('methodResults');
+                container.innerHTML = '';
+
+                const methods = {
+                    trapezoidal: '台形公式',
+                    simpson: 'Simpson公式',
+                    'monte-carlo': 'Monte Carlo法',
+                    gauss: 'Gauss求積法'
+                };
+
+                Object.keys(this.results).forEach(method => {
+                    const result = this.results[method];
+                    const card = document.createElement('div');
+                    card.className = `method-card ${method}`;
+                    
+                    card.innerHTML = `
+                        <h4>${methods[method]}</h4>
+                        <div class="result-row">
+                            <span>積分値:</span>
+                            <span>${result.value.toFixed(8)}</span>
+                        </div>
+                        <div class="result-row">
+                            <span>絶対誤差:</span>
+                            <span>${result.error !== null ? result.error.toExponential(2) : 'N/A'}</span>
+                        </div>
+                        <div class="result-row">
+                            <span>計算時間:</span>
+                            <span>${result.time.toFixed(2)} ms</span>
+                        </div>
+                        <div class="result-row">
+                            <span>相対誤差:</span>
+                            <span>${this.trueValue !== null ? (result.error / Math.abs(this.trueValue) * 100).toFixed(4) + '%' : 'N/A'}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(card);
+                });
+            }
+
+            displayBenchmarkResults(benchmarkResults) {
+                const container = document.getElementById('benchmarkResults');
+                const table = document.getElementById('benchmarkTable');
+                
+                let html = `
+                    <thead>
+                        <tr>
+                            <th>テストケース</th>
+                            <th>台形公式<br>誤差/時間</th>
+                            <th>Simpson公式<br>誤差/時間</th>
+                            <th>Monte Carlo<br>誤差/時間</th>
+                            <th>Gauss求積<br>誤差/時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+
+                benchmarkResults.forEach(benchmark => {
+                    html += `<tr><td>${benchmark.case}</td>`;
+                    
+                    ['trapezoidal', 'simpson', 'monte-carlo', 'gauss'].forEach(method => {
+                        const result = benchmark.results[method];
+                        const errorStr = result.error !== null ? result.error.toExponential(1) : 'N/A';
+                        const timeStr = result.time.toFixed(1) + 'ms';
+                        html += `<td>${errorStr}<br>${timeStr}</td>`;
+                    });
+                    
+                    html += '</tr>';
+                });
+
+                html += '</tbody>';
+                table.innerHTML = html;
+                container.style.display = 'block';
+            }
+
+            loadPreset(name) {
+                const preset = this.presets[name];
+                if (!preset) return;
+
+                document.getElementById('functionInput').value = preset.func;
+                document.getElementById('lowerBound').value = preset.a;
+                document.getElementById('upperBound').value = preset.b;
+                document.getElementById('trueValue').value = preset.exact || '';
+
+                // プリセットボタンのアクティブ状態を更新
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+
+                this.parseFunction();
+            }
+
+            generateLatex() {
+                if (Object.keys(this.results).length === 0) {
+                    alert('まず積分を実行してください');
+                    return;
+                }
+
+                const methodNames = {
+                    trapezoidal: '台形公式',
+                    simpson: 'Simpson公式',
+                    'monte-carlo': 'Monte Carlo法',  
+                    gauss: 'Gauss求積法'
+                };
+
+                let latex = `\\documentclass{article}
+\\usepackage{amsmath}
+\\usepackage{array}
+\\begin{document}
+
+\\title{数値積分法比較結果}
+\\maketitle
+
+\\section{問題設定}
+関数: $f(x) = ${this.functionString}$\\\\
+積分区間: $[${this.lowerBound}, ${this.upperBound}]$\\\\
+${this.trueValue !== null ? `理論値: ${this.trueValue.toFixed(8)}` : ''}
+
+\\section{計算結果}
+\\begin{center}
+\\begin{tabular}{|l|c|c|c|}
+\\hline
+手法 & 積分値 & 絶対誤差 & 計算時間(ms) \\\\
+\\hline
+`;
+
+                Object.keys(this.results).forEach(method => {
+                    const result = this.results[method];
+                    const errorStr = result.error !== null ? result.error.toExponential(2) : 'N/A';
+                    latex += `${methodNames[method]} & ${result.value.toFixed(8)} & ${errorStr} & ${result.time.toFixed(2)} \\\\\n`;
+                });
+
+                latex += `\\hline
+\\end{tabular}
+\\end{center}
+
+\\end{document}`;
+
+                document.getElementById('latexContent').textContent = latex;
+                document.getElementById('latexOutput').style.display = 'block';
+            }
+
+            copyLatex() {
+                const content = document.getElementById('latexContent').textContent;
+                navigator.clipboard.writeText(content).then(() => {
+                    alert('LaTeX code copied to clipboard!');
+                });
+            }
+
+            exportResults() {
+                const data = {
+                    function: this.functionString,
+                    bounds: [this.lowerBound, this.upperBound],
+                    trueValue: this.trueValue,
+                    results: this.results,
+                    convergenceData: this.convergenceData,
+                    timestamp: new Date().toISOString()
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `integration-results-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importResults() {
+                document.getElementById('fileInput').click();
+            }
+
+            handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        document.getElementById('functionInput').value = data.function;
+                        document.getElementById('lowerBound').value = data.bounds[0];
+                        document.getElementById('upperBound').value = data.bounds[1];
+                        document.getElementById('trueValue').value = data.trueValue || '';
+                        
+                        this.results = data.results || {};
+                        this.convergenceData = data.convergenceData || {};
+                        
+                        this.parseFunction();
+                        this.displayResults();
+                        this.updateConvergencePlot();
+                        
+                        alert('結果が読み込まれました');
+                    } catch (err) {
+                        alert('ファイルの読み込みに失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            shareResults() {
+                if (Object.keys(this.results).length === 0) {
+                    alert('共有する結果がありません');
+                    return;
+                }
+
+                const summary = `数値積分結果 f(x)=${this.functionString}, [${this.lowerBound}, ${this.upperBound}]\n` +
+                    Object.keys(this.results).map(method => 
+                        `${method}: ${this.results[method].value.toFixed(6)}`
+                    ).join('\n');
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: '数値積分結果',
+                        text: summary
+                    });
+                } else {
+                    navigator.clipboard.writeText(summary).then(() => {
+                        alert('結果がクリップボードにコピーされました');
+                    });
+                }
+            }
+
+            clearResults() {
+                this.results = {};
+                this.convergenceData = {};
+                document.getElementById('methodResults').innerHTML = '';
+                document.getElementById('benchmarkResults').style.display = 'none';
+                document.getElementById('latexOutput').style.display = 'none';
+                this.updateConvergencePlot();
+            }
+
+            showProgress(text, percentage) {
+                document.getElementById('progressText').textContent = text;
+                document.getElementById('progressBar').style.width = `${percentage}%`;
+            }
+
+            hideProgress() {
+                document.getElementById('progressText').textContent = '準備完了';
+                document.getElementById('progressBar').style.width = '0%';
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // グローバル関数（HTML側から呼び出される）
+        let integrationTool;
+
+        function parseFunction() {
+            integrationTool.parseFunction();
+        }
+
+        function runAllMethods() {
+            integrationTool.runAllMethods();
+        }
+
+        function runConvergenceAnalysis() {
+            integrationTool.runConvergenceAnalysis();
+        }
+
+        function runBenchmark() {
+            integrationTool.runBenchmark();
+        }
+
+        function clearResults() {
+            integrationTool.clearResults();
+        }
+
+        function loadPreset(name) {
+            integrationTool.loadPreset(name);
+        }
+
+        function exportResults() {
+            integrationTool.exportResults();
+        }
+
+        function generateLatex() {
+            integrationTool.generateLatex();
+        }
+
+        function copyLatex() {
+            integrationTool.copyLatex();
+        }
+
+        function shareResults() {
+            integrationTool.shareResults();
+        }
+
+        function importResults() {
+            integrationTool.importResults();
+        }
+
+        function handleFileImport(event) {
+            integrationTool.handleFileImport(event);
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            integrationTool = new NumericalIntegrationTool();
+        });
+    </script>
+</body>
+</html>
