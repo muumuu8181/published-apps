@@ -832,10 +832,30 @@
                 const button = e.currentTarget;
                 const category = button.dataset.category;
 
-                try {
-                    this.toggleActivity(category);
-                } catch (error) {
-                    this.showMessage('リクエスト処理エラー: ' + error.message, 'error');
+                // カスタムボタンの場合は、入力フィールドのテキストを使用
+                if (category === 'Custom') {
+                    const customText = document.getElementById('custom-text');
+                    const text = customText.value.trim();
+                    
+                    if (!text) {
+                        this.showMessage('カスタムアクティビティ名を入力してください', 'error');
+                        return;
+                    }
+
+                    try {
+                        this.toggleActivity(category, text);
+                        customText.value = '';
+                        this.updateCustomButtonState();
+                        this.updateCharacterCount();
+                    } catch (error) {
+                        this.showMessage('カスタムアクティビティ開始エラー: ' + error.message, 'error');
+                    }
+                } else {
+                    try {
+                        this.toggleActivity(category);
+                    } catch (error) {
+                        this.showMessage('リクエスト処理エラー: ' + error.message, 'error');
+                    }
                 }
             }
 
