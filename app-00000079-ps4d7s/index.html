@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ベクトル場流線シミュレーター</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e, #2d1b69, #11092d);
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #renderer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+        }
+
+        .control-panel {
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .info-panel {
+            top: 20px;
+            right: 20px;
+            width: 250px;
+        }
+
+        .bottom-panel {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ecdc4;
+        }
+
+        .section h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.875rem;
+            color: #cccccc;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 0.875rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+
+        .stats {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-value {
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #4ecdc4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 300;
+            display: none;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .control-panel {
+                width: calc(100vw - 40px);
+                max-width: 350px;
+            }
+            
+            .info-panel {
+                width: calc(100vw - 40px);
+                max-width: 280px;
+                top: auto;
+                bottom: 80px;
+                right: 20px;
+            }
+            
+            .bottom-panel {
+                bottom: 10px;
+                left: 20px;
+                right: 20px;
+                transform: none;
+                justify-content: center;
+            }
+            
+            h1 {
+                font-size: 1.2rem;
+            }
+        }
+
+        .particle-trail {
+            opacity: 0.8;
+            filter: blur(0.5px);
+        }
+
+        .vector-field-visualization {
+            opacity: 0.3;
+        }
+
+        /* カスタムスクロールバー */
+        .control-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="renderer"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>シミュレーター初期化中...</div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="ui-panel control-panel">
+            <h1>🌊 ベクトル場流線シミュレーター</h1>
+            
+            <div class="section">
+                <h3>⚙️ ベクトル場設定</h3>
+                <div class="control-group">
+                    <label>プリセット場</label>
+                    <select id="fieldPreset">
+                        <option value="electromagnetic">電磁場モデル</option>
+                        <option value="vortex">流体渦モデル</option>
+                        <option value="gravity">引力場</option>
+                        <option value="repulsion">斥力場</option>
+                        <option value="oscillation">振動場</option>
+                        <option value="lorenz">ローレンツアトラクター風</option>
+                        <option value="vanderpol">ヴァンデルポール振動子</option>
+                        <option value="duffing">ダフィング振動子</option>
+                        <option value="gravitywells">重力井戸</option>
+                        <option value="composite">複合場</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>場の強度: <span id="strengthValue">1.0</span></label>
+                    <input type="range" id="fieldStrength" min="0.1" max="5.0" step="0.1" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label>渦巻き係数: <span id="curlValue">1.0</span></label>
+                    <input type="range" id="curlFactor" min="0.0" max="3.0" step="0.1" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label>時間スケール: <span id="timeScaleValue">1.0</span></label>
+                    <input type="range" id="timeScale" min="0.1" max="3.0" step="0.1" value="1.0">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔢 粒子設定</h3>
+                <div class="control-group">
+                    <label>粒子数: <span id="particleCountValue">10</span></label>
+                    <input type="range" id="particleCount" min="1" max="50" step="1" value="10">
+                </div>
+                <div class="control-group">
+                    <label>軌道長: <span id="trailLengthValue">100</span></label>
+                    <input type="range" id="trailLength" min="10" max="500" step="10" value="100">
+                </div>
+                <div class="control-group">
+                    <label>ステップサイズ: <span id="stepSizeValue">0.01</span></label>
+                    <input type="range" id="stepSize" min="0.001" max="0.1" step="0.001" value="0.01">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎨 視覚化設定</h3>
+                <div class="control-group">
+                    <label>軌道色</label>
+                    <div class="btn-group">
+                        <button class="btn-small" onclick="setTrailColor('rainbow')">🌈 レインボー</button>
+                        <button class="btn-small" onclick="setTrailColor('speed')">⚡ 速度</button>
+                        <button class="btn-small" onclick="setTrailColor('single')">🎯 単色</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>視点</label>
+                    <div class="btn-group">
+                        <button class="btn-small" onclick="setView('2d')">2D</button>
+                        <button class="btn-small" onclick="setView('3d')">3D</button>
+                        <button class="btn-small" onclick="setView('top')">上面</button>
+                        <button class="btn-small" onclick="resetView()">リセット</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎮 制御</h3>
+                <div class="btn-group">
+                    <button onclick="toggleSimulation()">⏯️ 開始/停止</button>
+                    <button onclick="resetSimulation()">🔄 リセット</button>
+                    <button onclick="saveSnapshot()">📸 保存</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="ui-panel info-panel">
+            <h3>📊 シミュレーション情報</h3>
+            <div class="stats">
+                <div class="stats-item">
+                    <span>状態:</span>
+                    <span class="stats-value" id="simStatus">停止中</span>
+                </div>
+                <div class="stats-item">
+                    <span>FPS:</span>
+                    <span class="stats-value" id="fpsCounter">60</span>
+                </div>
+                <div class="stats-item">
+                    <span>ステップ/秒:</span>
+                    <span class="stats-value" id="stepsPerSec">100</span>
+                </div>
+                <div class="stats-item">
+                    <span>活性粒子:</span>
+                    <span class="stats-value" id="activeParticles">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>カメラ距離:</span>
+                    <span class="stats-value" id="cameraDistance">10</span>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 15px;">🎯 操作方法</h3>
+            <div style="font-size: 0.75rem; line-height: 1.3;">
+                <div>• マウスドラッグ: 回転</div>
+                <div>• ホイール: ズーム</div>
+                <div>• 右クリック: パン</div>
+                <div>• クリック: 粒子追加</div>
+            </div>
+        </div>
+
+        <div class="ui-panel bottom-panel">
+            <button onclick="showHelp()">❓ ヘルプ</button>
+            <button onclick="toggleFullscreen()">🖥️ フルスクリーン</button>
+            <button onclick="exportData()">💾 データ出力</button>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let scene, camera, renderer, controls;
+        let particles = [];
+        let vectorField;
+        let isRunning = false;
+        let animationId;
+        let startTime = Date.now();
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+
+        // シミュレーションパラメータ
+        const params = {
+            fieldType: 'electromagnetic',
+            fieldStrength: 1.0,
+            curlFactor: 1.0,
+            timeScale: 1.0,
+            particleCount: 10,
+            trailLength: 100,
+            stepSize: 0.01,
+            trailColor: 'rainbow',
+            view: '3d'
+        };
+
+        // ベクトル場定義
+        const vectorFields = {
+            electromagnetic: (x, y, z) => {
+                const r = Math.sqrt(x*x + y*y + z*z) + 0.1;
+                return [
+                    params.fieldStrength * (-y + params.curlFactor * x/r),
+                    params.fieldStrength * (x + params.curlFactor * y/r),
+                    params.fieldStrength * (params.curlFactor * z/r * 0.1)
+                ];
+            },
+            vortex: (x, y, z) => {
+                const r = Math.sqrt(x*x + y*y) + 0.1;
+                return [
+                    params.fieldStrength * (-y - params.curlFactor * x*z),
+                    params.fieldStrength * (x - params.curlFactor * y*z),
+                    params.fieldStrength * (params.curlFactor * (r - 1))
+                ];
+            },
+            gravity: (x, y, z) => {
+                const r = Math.sqrt(x*x + y*y + z*z) + 0.1;
+                const f = params.fieldStrength / (r*r*r);
+                return [-f*x, -f*y, -f*z];
+            },
+            repulsion: (x, y, z) => {
+                const r = Math.sqrt(x*x + y*y + z*z) + 0.1;
+                const f = params.fieldStrength / (r*r*r);
+                return [f*x, f*y, f*z];
+            },
+            oscillation: (x, y, z) => {
+                const t = Date.now() * 0.001 * params.timeScale;
+                return [
+                    params.fieldStrength * Math.sin(params.curlFactor * y + t) * Math.cos(z),
+                    params.fieldStrength * Math.sin(params.curlFactor * z + t) * Math.cos(x),
+                    params.fieldStrength * Math.sin(params.curlFactor * x + t) * Math.cos(y)
+                ];
+            },
+            lorenz: (x, y, z) => {
+                const sigma = 10 * params.fieldStrength;
+                const rho = 28 * params.curlFactor;
+                const beta = 8/3;
+                return [
+                    sigma * (y - x),
+                    x * (rho - z) - y,
+                    x * y - beta * z
+                ];
+            },
+            vanderpol: (x, y, z) => {
+                const mu = params.curlFactor;
+                return [
+                    params.fieldStrength * y,
+                    params.fieldStrength * (mu * (1 - x*x) * y - x),
+                    params.fieldStrength * (-z * 0.1)
+                ];
+            },
+            duffing: (x, y, z) => {
+                const alpha = -1 * params.curlFactor;
+                const beta = 1;
+                const gamma = params.fieldStrength * 0.3;
+                const omega = 1;
+                const t = Date.now() * 0.001 * params.timeScale;
+                return [
+                    y,
+                    -0.2*y + alpha*x + beta*x*x*x + gamma*Math.cos(omega*t),
+                    -z * 0.1
+                ];
+            },
+            gravitywells: (x, y, z) => {
+                const wells = [
+                    {x: -2, y: 0, z: 0, strength: params.fieldStrength},
+                    {x: 2, y: 0, z: 0, strength: -params.fieldStrength},
+                    {x: 0, y: 2, z: 0, strength: params.fieldStrength * params.curlFactor}
+                ];
+                let fx = 0, fy = 0, fz = 0;
+                wells.forEach(well => {
+                    const dx = x - well.x;
+                    const dy = y - well.y;
+                    const dz = z - well.z;
+                    const r = Math.sqrt(dx*dx + dy*dy + dz*dz) + 0.1;
+                    const f = well.strength / (r*r*r);
+                    fx -= f * dx;
+                    fy -= f * dy;
+                    fz -= f * dz;
+                });
+                return [fx, fy, fz];
+            },
+            composite: (x, y, z) => {
+                const t = Date.now() * 0.001 * params.timeScale;
+                const r = Math.sqrt(x*x + y*y) + 0.1;
+                return [
+                    params.fieldStrength * (-y/r + params.curlFactor * Math.sin(t + z)),
+                    params.fieldStrength * (x/r + params.curlFactor * Math.cos(t + z)),
+                    params.fieldStrength * (Math.sin(params.curlFactor * r + t) * 0.2)
+                ];
+            }
+        };
+
+        // 初期化
+        function init() {
+            // シーン作成
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            // カメラ作成
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 10, 10);
+            camera.lookAt(0, 0, 0);
+
+            // レンダラー作成
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('renderer').appendChild(renderer.domElement);
+
+            // ライト設定
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // グリッド表示
+            const gridHelper = new THREE.GridHelper(20, 20, 0x333333, 0x333333);
+            scene.add(gridHelper);
+
+            // 軸表示
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+
+            // コントロール設定
+            setupControls();
+
+            // UI設定
+            setupUI();
+
+            // 粒子初期化
+            initParticles();
+
+            // 初期ベクトル場設定
+            updateVectorField();
+
+            // ローディング非表示
+            document.getElementById('loading').style.display = 'none';
+
+            // アニメーション開始
+            animate();
+        }
+
+        // コントロール設定
+        function setupControls() {
+            // マウス/タッチ操作
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onWheel);
+            renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+            // タッチ操作
+            renderer.domElement.addEventListener('touchstart', onTouchStart);
+            renderer.domElement.addEventListener('touchmove', onTouchMove);
+            renderer.domElement.addEventListener('touchend', onTouchEnd);
+
+            let isMouseDown = false;
+            let mouseButton = 0;
+            let lastMouse = { x: 0, y: 0 };
+
+            function onMouseDown(event) {
+                isMouseDown = true;
+                mouseButton = event.button;
+                lastMouse.x = event.clientX;
+                lastMouse.y = event.clientY;
+
+                if (event.button === 0 && !event.ctrlKey) {
+                    // 左クリック: 粒子追加
+                    addParticleAtScreenPos(event.clientX, event.clientY);
+                }
+            }
+
+            function onMouseMove(event) {
+                if (!isMouseDown) return;
+
+                const deltaX = event.clientX - lastMouse.x;
+                const deltaY = event.clientY - lastMouse.y;
+
+                if (mouseButton === 0) {
+                    // 左ドラッグ: カメラ回転
+                    rotateCamera(deltaX * 0.01, deltaY * 0.01);
+                } else if (mouseButton === 2) {
+                    // 右ドラッグ: カメラパン
+                    panCamera(deltaX * 0.01, deltaY * 0.01);
+                }
+
+                lastMouse.x = event.clientX;
+                lastMouse.y = event.clientY;
+            }
+
+            function onMouseUp() {
+                isMouseDown = false;
+            }
+
+            function onWheel(event) {
+                event.preventDefault();
+                zoomCamera(event.deltaY * 0.001);
+            }
+
+            function onTouchStart(event) {
+                if (event.touches.length === 1) {
+                    lastMouse.x = event.touches[0].clientX;
+                    lastMouse.y = event.touches[0].clientY;
+                }
+            }
+
+            function onTouchMove(event) {
+                event.preventDefault();
+                if (event.touches.length === 1) {
+                    const deltaX = event.touches[0].clientX - lastMouse.x;
+                    const deltaY = event.touches[0].clientY - lastMouse.y;
+                    rotateCamera(deltaX * 0.01, deltaY * 0.01);
+                    lastMouse.x = event.touches[0].clientX;
+                    lastMouse.y = event.touches[0].clientY;
+                }
+            }
+
+            function onTouchEnd(event) {
+                // タッチ終了処理
+            }
+        }
+
+        // カメラ操作
+        function rotateCamera(deltaX, deltaY) {
+            const spherical = new THREE.Spherical();
+            spherical.setFromVector3(camera.position);
+            spherical.theta -= deltaX;
+            spherical.phi += deltaY;
+            spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+            camera.position.setFromSpherical(spherical);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function panCamera(deltaX, deltaY) {
+            const right = new THREE.Vector3();
+            const up = new THREE.Vector3();
+            camera.getWorldDirection(new THREE.Vector3());
+            right.setFromMatrixColumn(camera.matrix, 0);
+            up.setFromMatrixColumn(camera.matrix, 1);
+            
+            const panVector = new THREE.Vector3();
+            panVector.addScaledVector(right, -deltaX);
+            panVector.addScaledVector(up, deltaY);
+            
+            camera.position.add(panVector);
+        }
+
+        function zoomCamera(delta) {
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            camera.position.addScaledVector(direction, delta * camera.position.length() * 0.1);
+        }
+
+        // UI設定
+        function setupUI() {
+            // スライダー更新
+            const sliders = [
+                { id: 'fieldStrength', param: 'fieldStrength', display: 'strengthValue' },
+                { id: 'curlFactor', param: 'curlFactor', display: 'curlValue' },
+                { id: 'timeScale', param: 'timeScale', display: 'timeScaleValue' },
+                { id: 'particleCount', param: 'particleCount', display: 'particleCountValue' },
+                { id: 'trailLength', param: 'trailLength', display: 'trailLengthValue' },
+                { id: 'stepSize', param: 'stepSize', display: 'stepSizeValue' }
+            ];
+
+            sliders.forEach(slider => {
+                const element = document.getElementById(slider.id);
+                const display = document.getElementById(slider.display);
+                
+                element.addEventListener('input', () => {
+                    params[slider.param] = parseFloat(element.value);
+                    display.textContent = element.value;
+                    
+                    if (slider.param === 'particleCount') {
+                        updateParticleCount();
+                    } else if (slider.param === 'trailLength') {
+                        updateTrailLength();
+                    } else {
+                        updateVectorField();
+                    }
+                });
+            });
+
+            // プリセット変更
+            document.getElementById('fieldPreset').addEventListener('change', (e) => {
+                params.fieldType = e.target.value;
+                updateVectorField();
+            });
+
+            // リサイズ対応
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // 粒子初期化
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < params.particleCount; i++) {
+                addParticle(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 2
+                );
+            }
+        }
+
+        // 粒子追加
+        function addParticle(x, y, z) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(params.trailLength * 3);
+            const colors = new Float32Array(params.trailLength * 3);
+            
+            for (let i = 0; i < params.trailLength; i++) {
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                positions[i * 3 + 2] = z;
+                
+                colors[i * 3] = 1;
+                colors[i * 3 + 1] = 0.2;
+                colors[i * 3 + 2] = 0.5;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            
+            particles.push({
+                position: new THREE.Vector3(x, y, z),
+                trail: [],
+                line: line,
+                geometry: geometry
+            });
+        }
+
+        // 画面座標から粒子追加
+        function addParticleAtScreenPos(screenX, screenY) {
+            const mouse = new THREE.Vector2();
+            mouse.x = (screenX / window.innerWidth) * 2 - 1;
+            mouse.y = -(screenY / window.innerHeight) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            // カメラ方向に仮想平面を作成
+            const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+            const intersect = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, intersect);
+            
+            addParticle(intersect.x, intersect.y, intersect.z);
+        }
+
+        // ベクトル場更新
+        function updateVectorField() {
+            vectorField = vectorFields[params.fieldType];
+        }
+
+        // 粒子数更新
+        function updateParticleCount() {
+            while (particles.length > params.particleCount) {
+                const particle = particles.pop();
+                scene.remove(particle.line);
+            }
+            
+            while (particles.length < params.particleCount) {
+                addParticle(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 2
+                );
+            }
+        }
+
+        // 軌道長更新
+        function updateTrailLength() {
+            particles.forEach(particle => {
+                particle.trail = particle.trail.slice(-params.trailLength);
+                
+                const positions = new Float32Array(params.trailLength * 3);
+                const colors = new Float32Array(params.trailLength * 3);
+                
+                for (let i = 0; i < params.trailLength; i++) {
+                    const trailPoint = particle.trail[i] || particle.position;
+                    positions[i * 3] = trailPoint.x;
+                    positions[i * 3 + 1] = trailPoint.y;
+                    positions[i * 3 + 2] = trailPoint.z;
+                    
+                    const color = getTrailColor(i / params.trailLength, particle);
+                    colors[i * 3] = color.r;
+                    colors[i * 3 + 1] = color.g;
+                    colors[i * 3 + 2] = color.b;
+                }
+                
+                particle.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                particle.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            });
+        }
+
+        // 軌道色計算
+        function getTrailColor(t, particle) {
+            switch (params.trailColor) {
+                case 'rainbow':
+                    const hue = (t * 360 + Date.now() * 0.1) % 360;
+                    return new THREE.Color().setHSL(hue / 360, 1, 0.5);
+                case 'speed':
+                    const speed = particle.velocity ? particle.velocity.length() : 1;
+                    return new THREE.Color().setHSL(0.7 - Math.min(speed * 0.1, 0.7), 1, 0.5);
+                case 'single':
+                default:
+                    return new THREE.Color(0x4ecdc4);
+            }
+        }
+
+        // Runge-Kutta 4次法
+        function rungeKutta4(pos, h) {
+            const k1 = vectorField(pos.x, pos.y, pos.z);
+            const k2 = vectorField(pos.x + h*k1[0]/2, pos.y + h*k1[1]/2, pos.z + h*k1[2]/2);
+            const k3 = vectorField(pos.x + h*k2[0]/2, pos.y + h*k2[1]/2, pos.z + h*k2[2]/2);
+            const k4 = vectorField(pos.x + h*k3[0], pos.y + h*k3[1], pos.z + h*k3[2]);
+            
+            return new THREE.Vector3(
+                pos.x + h * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]) / 6,
+                pos.y + h * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]) / 6,
+                pos.z + h * (k1[2] + 2*k2[2] + 2*k3[2] + k4[2]) / 6
+            );
+        }
+
+        // シミュレーション更新
+        function updateSimulation() {
+            if (!isRunning) return;
+            
+            particles.forEach(particle => {
+                // 新しい位置を計算
+                const newPos = rungeKutta4(particle.position, params.stepSize * params.timeScale);
+                
+                // 境界チェック
+                const boundary = 15;
+                if (Math.abs(newPos.x) > boundary || Math.abs(newPos.y) > boundary || Math.abs(newPos.z) > boundary) {
+                    // 境界を超えた場合、ランダムな位置にリセット
+                    particle.position.set(
+                        (Math.random() - 0.5) * 10,
+                        (Math.random() - 0.5) * 10,
+                        (Math.random() - 0.5) * 2
+                    );
+                    particle.trail = [];
+                } else {
+                    // 速度計算
+                    particle.velocity = newPos.clone().sub(particle.position);
+                    particle.position.copy(newPos);
+                }
+                
+                // 軌道に追加
+                particle.trail.push(particle.position.clone());
+                if (particle.trail.length > params.trailLength) {
+                    particle.trail.shift();
+                }
+                
+                // 軌道を描画
+                const positions = particle.geometry.attributes.position.array;
+                const colors = particle.geometry.attributes.color.array;
+                
+                for (let i = 0; i < params.trailLength; i++) {
+                    const trailIndex = particle.trail.length - params.trailLength + i;
+                    const trailPoint = trailIndex >= 0 ? particle.trail[trailIndex] : particle.position;
+                    
+                    positions[i * 3] = trailPoint.x;
+                    positions[i * 3 + 1] = trailPoint.y;
+                    positions[i * 3 + 2] = trailPoint.z;
+                    
+                    const alpha = i / params.trailLength;
+                    const color = getTrailColor(alpha, particle);
+                    colors[i * 3] = color.r;
+                    colors[i * 3 + 1] = color.g;
+                    colors[i * 3 + 2] = color.b;
+                }
+                
+                particle.geometry.attributes.position.needsUpdate = true;
+                particle.geometry.attributes.color.needsUpdate = true;
+            });
+        }
+
+        // メインアニメーションループ
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            updateSimulation();
+            updateStats();
+            
+            renderer.render(scene, camera);
+        }
+
+        // 統計更新
+        function updateStats() {
+            frameCount++;
+            const now = Date.now();
+            
+            if (now - lastFpsUpdate > 1000) {
+                const fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
+                document.getElementById('fpsCounter').textContent = fps;
+                document.getElementById('stepsPerSec').textContent = isRunning ? '100' : '0';
+                document.getElementById('activeParticles').textContent = particles.length;
+                document.getElementById('cameraDistance').textContent = Math.round(camera.position.length());
+                
+                frameCount = 0;
+                lastFpsUpdate = now;
+            }
+        }
+
+        // コントロール関数
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            document.getElementById('simStatus').textContent = isRunning ? '実行中' : '停止中';
+        }
+
+        function resetSimulation() {
+            particles.forEach(particle => {
+                scene.remove(particle.line);
+            });
+            initParticles();
+        }
+
+        function setTrailColor(colorType) {
+            params.trailColor = colorType;
+        }
+
+        function setView(viewType) {
+            params.view = viewType;
+            switch (viewType) {
+                case '2d':
+                    camera.position.set(0, 0, 20);
+                    camera.lookAt(0, 0, 0);
+                    break;
+                case '3d':
+                    camera.position.set(10, 10, 10);
+                    camera.lookAt(0, 0, 0);
+                    break;
+                case 'top':
+                    camera.position.set(0, 20, 0);
+                    camera.lookAt(0, 0, 0);
+                    break;
+            }
+        }
+
+        function resetView() {
+            camera.position.set(10, 10, 10);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function saveSnapshot() {
+            const canvas = renderer.domElement;
+            const link = document.createElement('a');
+            link.download = `vector_field_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function showHelp() {
+            alert(`ベクトル場流線シミュレーター ヘルプ
+
+🎮 操作方法:
+• マウスドラッグ: カメラ回転
+• ホイール: ズーム
+• 右クリックドラッグ: パン
+• 左クリック: 粒子追加
+
+⚙️ 機能:
+• 10種類のプリセット場
+• リアルタイム流線トレース
+• Runge-Kutta 4次法による高精度計算
+• カスタマイズ可能な視覚化
+
+🎨 視覚化:
+• レインボー軌道
+• 速度ベース色分け
+• 3D/2D視点切り替え`);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function exportData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                parameters: params,
+                particles: particles.map(p => ({
+                    position: p.position.toArray(),
+                    trail: p.trail.map(t => t.toArray())
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `simulation_data_${Date.now()}.json`;
+            link.click();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // 初期化実行
+        window.addEventListener('load', () => {
+            try {
+                init();
+            } catch (error) {
+                console.error('初期化エラー:', error);
+                showError('シミュレーターの初期化に失敗しました: ' + error.message);
+            }
+        });
+
+        // エラーハンドリング
+        window.addEventListener('error', (event) => {
+            console.error('エラー:', event.error);
+            showError('予期しないエラーが発生しました: ' + event.error.message);
+        });
+    </script>
+</body>
+</html>
