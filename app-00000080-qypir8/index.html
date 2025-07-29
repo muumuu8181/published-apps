@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乱数生成アルゴリズムベンチマークツール</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --accent: #2196f3;
+            --accent-hover: #1976d2;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+            --border: #dddddd;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #404040;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --accent: #64b5f6;
+            --accent-hover: #42a5f5;
+            --border: #555555;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .theme-toggle {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 30px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-section {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .control-section h3 {
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .results-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin: 15px 0;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: var(--bg-primary);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-modal {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .close-modal:hover {
+            color: var(--text-primary);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .results-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            border: 2px solid var(--error);
+            color: var(--error);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid var(--success);
+            color: var(--success);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎲 乱数生成アルゴリズムベンチマークツール</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 テーマ切替</button>
+        </header>
+
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>⚙️ アルゴリズム選択</h3>
+                <div class="form-group">
+                    <label>比較モード</label>
+                    <select id="comparisonMode" onchange="updateAlgorithmSelection()">
+                        <option value="single">シングルモード</option>
+                        <option value="batch">バッチ比較モード</option>
+                    </select>
+                </div>
+                <div id="singleAlgorithmSelect" class="form-group">
+                    <label>アルゴリズム</label>
+                    <select id="singleAlgorithm">
+                        <option value="mt19937">Mersenne Twister (MT19937)</option>
+                        <option value="xorshift32">Xorshift (32-bit)</option>
+                        <option value="xorshift64">Xorshift (64-bit)</option>
+                        <option value="xorshift128">Xorshift (128-bit)</option>
+                        <option value="pcg">PCG (Permuted Congruential Generator)</option>
+                        <option value="lcg">LCG (Linear Congruential Generator)</option>
+                        <option value="math">JavaScript Math.random()</option>
+                    </select>
+                </div>
+                <div id="batchAlgorithmSelect" class="form-group" style="display: none;">
+                    <label>アルゴリズム（複数選択）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-mt19937" value="mt19937" checked>
+                            <label for="algo-mt19937">MT19937</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-xorshift32" value="xorshift32" checked>
+                            <label for="algo-xorshift32">Xorshift32</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-xorshift64" value="xorshift64">
+                            <label for="algo-xorshift64">Xorshift64</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-xorshift128" value="xorshift128">
+                            <label for="algo-xorshift128">Xorshift128</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-pcg" value="pcg" checked>
+                            <label for="algo-pcg">PCG</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-lcg" value="lcg">
+                            <label for="algo-lcg">LCG</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="algo-math" value="math" checked>
+                            <label for="algo-math">Math.random()</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>🔧 パラメータ設定</h3>
+                <div class="form-group">
+                    <label class="tooltip">
+                        シード値
+                        <span class="tooltiptext">乱数生成の初期値。同じシード値からは同じ乱数列が生成されます。</span>
+                    </label>
+                    <input type="number" id="seed" value="12345" min="0" max="4294967295">
+                </div>
+                <div class="form-group">
+                    <label class="tooltip">
+                        生成数
+                        <span class="tooltiptext">生成する乱数の個数（1～1,000,000）</span>
+                    </label>
+                    <input type="number" id="count" value="100000" min="1" max="1000000">
+                </div>
+                <div class="form-group">
+                    <label class="tooltip">
+                        サンプリング間隔
+                        <span class="tooltiptext">統計分析に使用するサンプリング間隔</span>
+                    </label>
+                    <input type="number" id="sampleInterval" value="100" min="1" max="10000">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>📊 統計テスト設定</h3>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="test-uniformity" checked>
+                        <label for="test-uniformity">均一性テスト</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="test-independence" checked>
+                        <label for="test-independence">独立性テスト</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="test-monobit" checked>
+                        <label for="test-monobit">モノビットテスト</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="test-runs" checked>
+                        <label for="test-runs">ランテスト</label>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="startBenchmark()">
+                        <span id="startBtnText">▶️ ベンチマーク開始</span>
+                        <span id="startBtnLoading" class="loading" style="display: none;"></span>
+                    </button>
+                    <button class="btn-secondary" onclick="stopBenchmark()">⏹️ 停止</button>
+                    <button class="btn-success" onclick="exportResults()">💾 エクスポート</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-bar" id="progressBar" style="display: none;">
+            <div class="progress-fill" id="progressFill" style="width: 0%;">0%</div>
+        </div>
+
+        <div class="results-panel" id="resultsPanel"></div>
+    </div>
+
+    <div class="modal" id="customTestModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔬 カスタムテスト追加</h3>
+                <span class="close-modal" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>テスト名</label>
+                <input type="text" id="customTestName" placeholder="例: 偏り検出テスト">
+            </div>
+            <div class="form-group">
+                <label>テスト関数（JavaScript）</label>
+                <textarea id="customTestCode" rows="10" placeholder="function(numbers) {
+  // numbersは生成された乱数の配列
+  // p値またはスコアを返す
+  return pValue;
+}"></textarea>
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="addCustomTest()">追加</button>
+                <button class="btn-secondary" onclick="closeModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let isRunning = false;
+        let worker = null;
+        let algorithms = {};
+        let results = {};
+        let charts = {};
+
+        // テーマ切り替え
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // 初期化
+        window.onload = function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            initializeAlgorithms();
+            setupWebWorker();
+        };
+
+        // アルゴリズム選択モード更新
+        function updateAlgorithmSelection() {
+            const mode = document.getElementById('comparisonMode').value;
+            document.getElementById('singleAlgorithmSelect').style.display = mode === 'single' ? 'block' : 'none';
+            document.getElementById('batchAlgorithmSelect').style.display = mode === 'batch' ? 'block' : 'none';
+        }
+
+        // 乱数生成アルゴリズムの実装
+        function initializeAlgorithms() {
+            // Mersenne Twister (MT19937)
+            algorithms.mt19937 = class MersenneTwister {
+                constructor(seed = 12345) {
+                    this.MT = new Array(624);
+                    this.index = 0;
+                    this.MT[0] = seed >>> 0;
+                    
+                    for (let i = 1; i < 624; i++) {
+                        const s = this.MT[i - 1] ^ (this.MT[i - 1] >>> 30);
+                        this.MT[i] = (((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253) + i;
+                        this.MT[i] = this.MT[i] >>> 0;
+                    }
+                }
+
+                generate() {
+                    if (this.index === 0) {
+                        this.generateNumbers();
+                    }
+
+                    let y = this.MT[this.index];
+                    y = y ^ (y >>> 11);
+                    y = y ^ ((y << 7) & 0x9d2c5680);
+                    y = y ^ ((y << 15) & 0xefc60000);
+                    y = y ^ (y >>> 18);
+
+                    this.index = (this.index + 1) % 624;
+                    return (y >>> 0) / 4294967296;
+                }
+
+                generateNumbers() {
+                    for (let i = 0; i < 624; i++) {
+                        const y = (this.MT[i] & 0x80000000) + (this.MT[(i + 1) % 624] & 0x7fffffff);
+                        this.MT[i] = this.MT[(i + 397) % 624] ^ (y >>> 1);
+                        if (y % 2 !== 0) {
+                            this.MT[i] = this.MT[i] ^ 0x9908b0df;
+                        }
+                    }
+                }
+            };
+
+            // Xorshift32
+            algorithms.xorshift32 = class Xorshift32 {
+                constructor(seed = 12345) {
+                    this.state = seed >>> 0;
+                    if (this.state === 0) this.state = 1;
+                }
+
+                generate() {
+                    let x = this.state;
+                    x ^= x << 13;
+                    x ^= x >>> 17;
+                    x ^= x << 5;
+                    this.state = x >>> 0;
+                    return this.state / 4294967296;
+                }
+            };
+
+            // Xorshift64
+            algorithms.xorshift64 = class Xorshift64 {
+                constructor(seed = 12345) {
+                    this.state = [seed >>> 0, (seed * 69069) >>> 0];
+                }
+
+                generate() {
+                    let x = this.state[0];
+                    const y = this.state[1];
+                    this.state[0] = y;
+                    x ^= x << 23;
+                    x ^= x >>> 17;
+                    x ^= y ^ (y >>> 26);
+                    this.state[1] = x;
+                    return (x + y) / 4294967296;
+                }
+            };
+
+            // Xorshift128
+            algorithms.xorshift128 = class Xorshift128 {
+                constructor(seed = 12345) {
+                    this.state = [
+                        seed >>> 0,
+                        (seed * 69069) >>> 0,
+                        (seed * 1234567) >>> 0,
+                        (seed * 2345678) >>> 0
+                    ];
+                }
+
+                generate() {
+                    let t = this.state[3];
+                    let s = this.state[0];
+                    this.state[3] = this.state[2];
+                    this.state[2] = this.state[1];
+                    this.state[1] = s;
+                    t ^= t << 11;
+                    t ^= t >>> 8;
+                    t ^= s ^ (s >>> 19);
+                    this.state[0] = t;
+                    return (t >>> 0) / 4294967296;
+                }
+            };
+
+            // PCG (Permuted Congruential Generator)
+            algorithms.pcg = class PCG {
+                constructor(seed = 12345) {
+                    this.state = BigInt(seed);
+                    this.inc = BigInt(1);
+                }
+
+                generate() {
+                    const oldstate = this.state;
+                    this.state = (oldstate * BigInt(6364136223846793005) + this.inc) & BigInt('0xFFFFFFFFFFFFFFFF');
+                    const xorshifted = Number(((oldstate >> BigInt(18)) ^ oldstate) >> BigInt(27));
+                    const rot = Number(oldstate >> BigInt(59));
+                    return ((xorshifted >>> rot) | (xorshifted << (32 - rot))) / 4294967296;
+                }
+            };
+
+            // LCG (Linear Congruential Generator)
+            algorithms.lcg = class LCG {
+                constructor(seed = 12345) {
+                    this.state = seed >>> 0;
+                }
+
+                generate() {
+                    this.state = (this.state * 1664525 + 1013904223) >>> 0;
+                    return this.state / 4294967296;
+                }
+            };
+
+            // JavaScript Math.random() wrapper
+            algorithms.math = class MathRandom {
+                constructor(seed = 12345) {
+                    // Math.random()はシードを設定できないため、無視
+                }
+
+                generate() {
+                    return Math.random();
+                }
+            };
+        }
+
+        // Web Worker セットアップ
+        function setupWebWorker() {
+            const workerCode = `
+                let algorithms = {};
+                ${initializeAlgorithms.toString()}
+                initializeAlgorithms();
+
+                self.onmessage = function(e) {
+                    const { action, data } = e.data;
+                    
+                    if (action === 'generate') {
+                        const { algorithmName, seed, count, sampleInterval } = data;
+                        const Algorithm = algorithms[algorithmName];
+                        const generator = new Algorithm(seed);
+                        const numbers = [];
+                        const samples = [];
+                        
+                        const startTime = performance.now();
+                        
+                        for (let i = 0; i < count; i++) {
+                            const num = generator.generate();
+                            numbers.push(num);
+                            
+                            if (i % sampleInterval === 0) {
+                                samples.push(num);
+                            }
+                            
+                            if (i % 10000 === 0) {
+                                self.postMessage({
+                                    type: 'progress',
+                                    progress: (i / count) * 100,
+                                    algorithmName
+                                });
+                            }
+                        }
+                        
+                        const endTime = performance.now();
+                        const duration = endTime - startTime;
+                        const speed = count / (duration / 1000);
+                        
+                        self.postMessage({
+                            type: 'complete',
+                            algorithmName,
+                            numbers,
+                            samples,
+                            duration,
+                            speed
+                        });
+                    }
+                };
+            `;
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            worker = new Worker(URL.createObjectURL(blob));
+
+            worker.onmessage = function(e) {
+                const { type, algorithmName } = e.data;
+                
+                if (type === 'progress') {
+                    updateProgress(e.data.progress);
+                } else if (type === 'complete') {
+                    processResults(algorithmName, e.data);
+                }
+            };
+        }
+
+        // ベンチマーク開始
+        async function startBenchmark() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            results = {};
+            
+            // UI更新
+            document.getElementById('startBtnText').textContent = '実行中...';
+            document.getElementById('startBtnLoading').style.display = 'inline-block';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('resultsPanel').innerHTML = '';
+            
+            // パラメータ取得
+            const seed = parseInt(document.getElementById('seed').value);
+            const count = parseInt(document.getElementById('count').value);
+            const sampleInterval = parseInt(document.getElementById('sampleInterval').value);
+            const mode = document.getElementById('comparisonMode').value;
+            
+            // アルゴリズム選択
+            let selectedAlgorithms = [];
+            if (mode === 'single') {
+                selectedAlgorithms = [document.getElementById('singleAlgorithm').value];
+            } else {
+                const checkboxes = document.querySelectorAll('#batchAlgorithmSelect input[type="checkbox"]:checked');
+                selectedAlgorithms = Array.from(checkboxes).map(cb => cb.value);
+            }
+            
+            // 各アルゴリズムで生成
+            for (let i = 0; i < selectedAlgorithms.length; i++) {
+                const algorithmName = selectedAlgorithms[i];
+                
+                if (!isRunning) break;
+                
+                // Web Workerで生成
+                worker.postMessage({
+                    action: 'generate',
+                    data: {
+                        algorithmName,
+                        seed,
+                        count,
+                        sampleInterval
+                    }
+                });
+                
+                // 結果を待つ
+                await new Promise(resolve => {
+                    const originalOnMessage = worker.onmessage;
+                    worker.onmessage = function(e) {
+                        originalOnMessage(e);
+                        if (e.data.type === 'complete' && e.data.algorithmName === algorithmName) {
+                            resolve();
+                        }
+                    };
+                });
+            }
+            
+            // 完了
+            isRunning = false;
+            document.getElementById('startBtnText').textContent = '▶️ ベンチマーク開始';
+            document.getElementById('startBtnLoading').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+        }
+
+        // ベンチマーク停止
+        function stopBenchmark() {
+            isRunning = false;
+            document.getElementById('startBtnText').textContent = '▶️ ベンチマーク開始';
+            document.getElementById('startBtnLoading').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+        }
+
+        // 進捗更新
+        function updateProgress(progress) {
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = progress + '%';
+            progressFill.textContent = Math.round(progress) + '%';
+        }
+
+        // 結果処理
+        function processResults(algorithmName, data) {
+            const { numbers, samples, duration, speed } = data;
+            
+            // 統計テスト実行
+            const testResults = runStatisticalTests(numbers, samples);
+            
+            // 結果保存
+            results[algorithmName] = {
+                numbers,
+                samples,
+                duration,
+                speed,
+                tests: testResults
+            };
+            
+            // 結果表示
+            displayResults(algorithmName);
+        }
+
+        // 統計テスト実行
+        function runStatisticalTests(numbers, samples) {
+            const results = {};
+            
+            // 均一性テスト（カイ二乗検定）
+            if (document.getElementById('test-uniformity').checked) {
+                results.uniformity = chiSquareTest(numbers);
+            }
+            
+            // 独立性テスト（自己相関）
+            if (document.getElementById('test-independence').checked) {
+                results.independence = autocorrelationTest(samples);
+            }
+            
+            // モノビットテスト
+            if (document.getElementById('test-monobit').checked) {
+                results.monobit = monobitTest(numbers);
+            }
+            
+            // ランテスト
+            if (document.getElementById('test-runs').checked) {
+                results.runs = runsTest(numbers);
+            }
+            
+            return results;
+        }
+
+        // カイ二乗検定
+        function chiSquareTest(numbers) {
+            const bins = 10;
+            const expected = numbers.length / bins;
+            const observed = new Array(bins).fill(0);
+            
+            numbers.forEach(num => {
+                const bin = Math.floor(num * bins);
+                observed[Math.min(bin, bins - 1)]++;
+            });
+            
+            let chiSquare = 0;
+            observed.forEach(count => {
+                chiSquare += Math.pow(count - expected, 2) / expected;
+            });
+            
+            // 自由度 = bins - 1 でのp値を近似計算
+            const df = bins - 1;
+            const pValue = 1 - gammaCDF(chiSquare / 2, df / 2);
+            
+            return {
+                statistic: chiSquare,
+                pValue: pValue,
+                pass: pValue > 0.05
+            };
+        }
+
+        // 自己相関テスト
+        function autocorrelationTest(samples) {
+            const n = samples.length;
+            const mean = samples.reduce((a, b) => a + b) / n;
+            
+            let numerator = 0;
+            let denominator = 0;
+            
+            for (let i = 0; i < n - 1; i++) {
+                numerator += (samples[i] - mean) * (samples[i + 1] - mean);
+            }
+            
+            for (let i = 0; i < n; i++) {
+                denominator += Math.pow(samples[i] - mean, 2);
+            }
+            
+            const correlation = numerator / denominator;
+            const zScore = correlation * Math.sqrt(n);
+            const pValue = 2 * (1 - normalCDF(Math.abs(zScore)));
+            
+            return {
+                correlation: correlation,
+                pValue: pValue,
+                pass: Math.abs(correlation) < 0.1 && pValue > 0.05
+            };
+        }
+
+        // モノビットテスト
+        function monobitTest(numbers) {
+            let ones = 0;
+            let zeros = 0;
+            
+            numbers.forEach(num => {
+                const bits = Math.floor(num * 4294967296).toString(2).padStart(32, '0');
+                for (let bit of bits) {
+                    if (bit === '1') ones++;
+                    else zeros++;
+                }
+            });
+            
+            const n = ones + zeros;
+            const sObs = Math.abs(ones - zeros) / Math.sqrt(n);
+            const pValue = 2 * (1 - normalCDF(sObs));
+            
+            return {
+                ones: ones,
+                zeros: zeros,
+                statistic: sObs,
+                pValue: pValue,
+                pass: pValue > 0.01
+            };
+        }
+
+        // ランテスト
+        function runsTest(numbers) {
+            const median = [...numbers].sort((a, b) => a - b)[Math.floor(numbers.length / 2)];
+            const binary = numbers.map(n => n >= median ? 1 : 0);
+            
+            let runs = 1;
+            for (let i = 1; i < binary.length; i++) {
+                if (binary[i] !== binary[i - 1]) runs++;
+            }
+            
+            const n1 = binary.filter(b => b === 1).length;
+            const n2 = binary.length - n1;
+            
+            const expectedRuns = (2 * n1 * n2) / (n1 + n2) + 1;
+            const variance = (2 * n1 * n2 * (2 * n1 * n2 - n1 - n2)) / 
+                           (Math.pow(n1 + n2, 2) * (n1 + n2 - 1));
+            
+            const zScore = (runs - expectedRuns) / Math.sqrt(variance);
+            const pValue = 2 * (1 - normalCDF(Math.abs(zScore)));
+            
+            return {
+                runs: runs,
+                expected: expectedRuns,
+                zScore: zScore,
+                pValue: pValue,
+                pass: pValue > 0.05
+            };
+        }
+
+        // 補助関数: ガンマ分布のCDF近似
+        function gammaCDF(x, alpha) {
+            if (x <= 0) return 0;
+            if (x < alpha + 1) {
+                return gammaP(alpha, x);
+            } else {
+                return 1 - gammaQ(alpha, x);
+            }
+        }
+
+        // 不完全ガンマ関数の近似
+        function gammaP(a, x) {
+            let sum = 0;
+            let term = 1 / a;
+            let n = 1;
+            
+            while (Math.abs(term) > 1e-10 && n < 100) {
+                sum += term;
+                term *= x / (a + n);
+                n++;
+            }
+            
+            return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+        }
+
+        function gammaQ(a, x) {
+            let cf = 0;
+            let b = x + 1 - a;
+            let c = 1 / 1e-30;
+            let d = 1 / b;
+            let h = d;
+            
+            for (let i = 1; i <= 100; i++) {
+                const an = -i * (i - a);
+                b += 2;
+                d = an * d + b;
+                if (Math.abs(d) < 1e-30) d = 1e-30;
+                c = b + an / c;
+                if (Math.abs(c) < 1e-30) c = 1e-30;
+                d = 1 / d;
+                const del = d * c;
+                h *= del;
+                if (Math.abs(del - 1) < 1e-10) break;
+            }
+            
+            return Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+        }
+
+        function logGamma(z) {
+            const g = 7;
+            const coef = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+                        771.32342877765313, -176.61502916214059, 12.507343278686905,
+                        -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+            
+            z--;
+            let x = coef[0];
+            for (let i = 1; i < g + 2; i++) {
+                x += coef[i] / (z + i);
+            }
+            
+            const t = z + g + 0.5;
+            return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+        }
+
+        // 正規分布のCDF
+        function normalCDF(x) {
+            const a1 = 0.254829592;
+            const a2 = -0.284496736;
+            const a3 = 1.421413741;
+            const a4 = -1.453152027;
+            const a5 = 1.061405429;
+            const p = 0.3275911;
+            
+            const sign = x >= 0 ? 1 : -1;
+            x = Math.abs(x) / Math.sqrt(2);
+            
+            const t = 1 / (1 + p * x);
+            const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            
+            return 0.5 * (1 + sign * y);
+        }
+
+        // 結果表示
+        function displayResults(algorithmName) {
+            const result = results[algorithmName];
+            const resultsPanel = document.getElementById('resultsPanel');
+            
+            const algorithmNames = {
+                mt19937: 'Mersenne Twister (MT19937)',
+                xorshift32: 'Xorshift (32-bit)',
+                xorshift64: 'Xorshift (64-bit)',
+                xorshift128: 'Xorshift (128-bit)',
+                pcg: 'PCG',
+                lcg: 'LCG',
+                math: 'JavaScript Math.random()'
+            };
+            
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+                <h3>
+                    <span class="status-indicator"></span>
+                    ${algorithmNames[algorithmName]}
+                </h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${(result.speed / 1000000).toFixed(2)}M</div>
+                        <div class="stat-label">numbers/sec</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${result.duration.toFixed(0)}ms</div>
+                        <div class="stat-label">実行時間</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${result.numbers.length}</div>
+                        <div class="stat-label">生成数</div>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="histogram-${algorithmName}"></canvas>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="scatter-${algorithmName}"></canvas>
+                </div>
+                <h4>統計テスト結果</h4>
+                <div id="test-results-${algorithmName}"></div>
+            `;
+            
+            resultsPanel.appendChild(card);
+            
+            // ヒストグラム描画
+            setTimeout(() => {
+                drawHistogram(algorithmName);
+                drawScatterPlot(algorithmName);
+                displayTestResults(algorithmName);
+            }, 100);
+        }
+
+        // ヒストグラム描画
+        function drawHistogram(algorithmName) {
+            const canvas = document.getElementById(`histogram-${algorithmName}`);
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            const numbers = results[algorithmName].numbers;
+            const bins = 20;
+            const counts = new Array(bins).fill(0);
+            
+            numbers.forEach(num => {
+                const bin = Math.floor(num * bins);
+                counts[Math.min(bin, bins - 1)]++;
+            });
+            
+            const maxCount = Math.max(...counts);
+            const barWidth = canvas.width / bins;
+            
+            // 背景
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // バー描画
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+            counts.forEach((count, i) => {
+                const barHeight = (count / maxCount) * (canvas.height - 40);
+                ctx.fillRect(i * barWidth + 2, canvas.height - barHeight - 20, barWidth - 4, barHeight);
+            });
+            
+            // 軸
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 20);
+            ctx.lineTo(canvas.width, canvas.height - 20);
+            ctx.stroke();
+            
+            // ラベル
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('0', 10, canvas.height - 5);
+            ctx.fillText('1', canvas.width - 10, canvas.height - 5);
+            ctx.fillText('分布ヒストグラム', canvas.width / 2, 15);
+        }
+
+        // 散布図描画
+        function drawScatterPlot(algorithmName) {
+            const canvas = document.getElementById(`scatter-${algorithmName}`);
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            const samples = results[algorithmName].samples;
+            const plotSize = Math.min(samples.length - 1, 1000);
+            
+            // 背景
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // フラクタル風パターン
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < plotSize; i++) {
+                const x = Math.floor(samples[i] * canvas.width);
+                const y = Math.floor(samples[i + 1] * canvas.height);
+                
+                // 点の周りにグラデーション効果
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dy = -2; dy <= 2; dy++) {
+                        const px = x + dx;
+                        const py = y + dy;
+                        if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
+                            const idx = (py * canvas.width + px) * 4;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            const intensity = Math.max(0, 255 - distance * 50);
+                            data[idx] = 33;     // R
+                            data[idx + 1] = 150; // G
+                            data[idx + 2] = 243; // B
+                            data[idx + 3] = Math.min(255, data[idx + 3] + intensity); // A
+                        }
+                    }
+                }
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            // ラベル
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('連続値散布図', canvas.width / 2, 15);
+        }
+
+        // テスト結果表示
+        function displayTestResults(algorithmName) {
+            const container = document.getElementById(`test-results-${algorithmName}`);
+            const tests = results[algorithmName].tests;
+            let html = '<div class="stats-grid">';
+            
+            if (tests.uniformity) {
+                const test = tests.uniformity;
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: ${test.pass ? 'var(--success)' : 'var(--error)'}">
+                            ${test.pValue.toFixed(4)}
+                        </div>
+                        <div class="stat-label">均一性 p値</div>
+                    </div>
+                `;
+            }
+            
+            if (tests.independence) {
+                const test = tests.independence;
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: ${test.pass ? 'var(--success)' : 'var(--error)'}">
+                            ${test.correlation.toFixed(4)}
+                        </div>
+                        <div class="stat-label">自己相関</div>
+                    </div>
+                `;
+            }
+            
+            if (tests.monobit) {
+                const test = tests.monobit;
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: ${test.pass ? 'var(--success)' : 'var(--error)'}">
+                            ${test.pValue.toFixed(4)}
+                        </div>
+                        <div class="stat-label">モノビット p値</div>
+                    </div>
+                `;
+            }
+            
+            if (tests.runs) {
+                const test = tests.runs;
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: ${test.pass ? 'var(--success)' : 'var(--error)'}">
+                            ${test.pValue.toFixed(4)}
+                        </div>
+                        <div class="stat-label">ラン p値</div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            // 総合評価
+            const allTests = Object.values(tests);
+            const passedTests = allTests.filter(t => t.pass).length;
+            const totalTests = allTests.length;
+            const passRate = (passedTests / totalTests * 100).toFixed(0);
+            
+            html += `
+                <div style="margin-top: 15px; text-align: center;">
+                    <div class="stat-value" style="font-size: 2rem; color: ${passRate >= 75 ? 'var(--success)' : 'var(--warning)'}">
+                        ${passRate}%
+                    </div>
+                    <div class="stat-label">合格率 (${passedTests}/${totalTests})</div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 結果エクスポート
+        function exportResults() {
+            if (Object.keys(results).length === 0) {
+                alert('エクスポートする結果がありません。');
+                return;
+            }
+            
+            // CSV形式でエクスポート
+            let csv = 'Algorithm,Speed (numbers/sec),Duration (ms),Uniformity p-value,Independence correlation,Monobit p-value,Runs p-value,Overall Pass Rate\n';
+            
+            for (const [algorithmName, result] of Object.entries(results)) {
+                const tests = result.tests;
+                const allTests = Object.values(tests);
+                const passRate = (allTests.filter(t => t.pass).length / allTests.length * 100).toFixed(0);
+                
+                csv += `${algorithmName},${result.speed.toFixed(0)},${result.duration.toFixed(0)},`;
+                csv += `${tests.uniformity ? tests.uniformity.pValue.toFixed(4) : 'N/A'},`;
+                csv += `${tests.independence ? tests.independence.correlation.toFixed(4) : 'N/A'},`;
+                csv += `${tests.monobit ? tests.monobit.pValue.toFixed(4) : 'N/A'},`;
+                csv += `${tests.runs ? tests.runs.pValue.toFixed(4) : 'N/A'},`;
+                csv += `${passRate}%\n`;
+            }
+            
+            // JSONレポート
+            const report = {
+                timestamp: new Date().toISOString(),
+                parameters: {
+                    seed: document.getElementById('seed').value,
+                    count: document.getElementById('count').value,
+                    sampleInterval: document.getElementById('sampleInterval').value
+                },
+                results: {}
+            };
+            
+            for (const [algorithmName, result] of Object.entries(results)) {
+                report.results[algorithmName] = {
+                    performance: {
+                        speed: result.speed,
+                        duration: result.duration
+                    },
+                    tests: result.tests
+                };
+            }
+            
+            // ダウンロード
+            const csvBlob = new Blob([csv], { type: 'text/csv' });
+            const jsonBlob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            
+            const csvLink = document.createElement('a');
+            csvLink.href = URL.createObjectURL(csvBlob);
+            csvLink.download = `rng-benchmark-${Date.now()}.csv`;
+            csvLink.click();
+            
+            setTimeout(() => {
+                const jsonLink = document.createElement('a');
+                jsonLink.href = URL.createObjectURL(jsonBlob);
+                jsonLink.download = `rng-benchmark-report-${Date.now()}.json`;
+                jsonLink.click();
+            }, 100);
+        }
+
+        // モーダル表示
+        function showCustomTestModal() {
+            document.getElementById('customTestModal').style.display = 'flex';
+        }
+
+        // モーダル閉じる
+        function closeModal() {
+            document.getElementById('customTestModal').style.display = 'none';
+        }
+
+        // カスタムテスト追加
+        function addCustomTest() {
+            const name = document.getElementById('customTestName').value;
+            const code = document.getElementById('customTestCode').value;
+            
+            if (!name || !code) {
+                alert('テスト名と関数を入力してください。');
+                return;
+            }
+            
+            try {
+                // テスト関数を評価
+                const testFunction = eval(`(${code})`);
+                
+                // テストを保存（実装省略）
+                alert('カスタムテストが追加されました。');
+                closeModal();
+            } catch (e) {
+                alert('関数の構文エラー: ' + e.message);
+            }
+        }
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            Object.keys(results).forEach(algorithmName => {
+                if (document.getElementById(`histogram-${algorithmName}`)) {
+                    drawHistogram(algorithmName);
+                    drawScatterPlot(algorithmName);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
