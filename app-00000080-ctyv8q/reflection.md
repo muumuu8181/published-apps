@@ -43,6 +43,30 @@
 - **解決方法**: Worker AIとして直接アプリ生成作業を実行
 - **再発防止策**: スラッシュコマンドはClaude Codeの特殊コマンドであり、通常のツールでは実行できないことを認識
 
+### 問題3: デプロイ先の間違い（重要）
+- **発生タイミング**: Phase 3.5デプロイ準備中
+- **問題内容**: temp-deploy/フォルダにアプリを作成し、ai-auto-generatorリポジトリにプッシュしてしまった
+- **具体的な間違い**:
+  - BEFORE: `/ai-auto-generator/temp-deploy/app-00000080-ctyv8q/` → 404エラー
+  - AFTER: `/published-apps/app-00000080-ctyv8q/` → 正常アクセス可能
+- **根本原因**: 
+  - temp-deploy/は作業用の一時フォルダ（非公開）
+  - published-appsが公開用リポジトリ（GitHub Pages設定済み）
+  - ドキュメントにデプロイ先の明確な記載がなく、推測で判断してしまった
+- **解決方法**: 
+  ```bash
+  # 1. published-appsリポジトリをクローン
+  git clone https://github.com/muumuu8181/published-apps.git
+  # 2. アプリフォルダをコピー  
+  cp -r /ai-auto-generator/temp-deploy/app-00000080-ctyv8q /published-apps/
+  # 3. 正しいリポジトリにプッシュ
+  git add app-00000080-ctyv8q/ && git commit && git push origin main
+  ```
+- **再発防止策**: 
+  - デプロイ先についてドキュメントの明確化が必要
+  - temp-deploy/は作業用、published-apps/は公開用と明記すべき
+  - 推測判断せずに確認を取る習慣をつける
+
 ## 学習・改善点
 - 今回学んだこと
   - 乱数生成アルゴリズムの実装方法（Mersenne Twister, Xorshift, PCG, LCG, WELL512）
@@ -62,6 +86,7 @@
 - ドキュメントの改善提案
   - Worker AIセットアップガイドの「既存フォルダ削除」部分をより目立つように強調
   - スラッシュコマンドの実行方法についての説明追加
+  - **重要**: デプロイ先の明確化（temp-deploy/ vs published-apps/の使い分け）をドキュメントに追記すべき
 - ツール化が必要な箇所
   - 乱数品質テストの標準化ツール
   - アルゴリズムベンチマーク結果の自動比較ツール
