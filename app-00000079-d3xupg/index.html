@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ベクトル場流線シミュレーター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 300px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.3s ease;
+        }
+
+        .control-panel.hidden {
+            opacity: 0.1;
+        }
+
+        .control-panel:hover {
+            opacity: 1;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            text-align: center;
+            background: linear-gradient(45deg, #64b5f6, #42a5f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #b8b8b8;
+        }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.5);
+        }
+
+        option {
+            background: #2a5298;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-size: 0.8em;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #42a5f5, #1e88e5);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle at center, #0d1421 0%, #1a1a2e 50%, #16213e 100%);
+            cursor: crosshair;
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.8em;
+            max-width: 250px;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #64b5f6;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .preset-btn {
+            background: linear-gradient(45deg, #7b1fa2, #8e24aa);
+            font-size: 0.8em;
+            padding: 6px;
+        }
+
+        .preset-btn:hover {
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+        }
+
+        .toggle-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .field-equation {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            border-left: 3px solid #64b5f6;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            
+            .info-panel {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toggle-panel" onclick="toggleControlPanel()">
+            <span id="toggleIcon">⚙️</span>
+        </div>
+
+        <div class="control-panel" id="controlPanel">
+            <h1>ベクトル場流線シミュレーター</h1>
+            
+            <div class="control-group">
+                <label for="fieldType">ベクトル場タイプ</label>
+                <select id="fieldType" onchange="updateField()">
+                    <option value="vortex">渦場 (Vortex)</option>
+                    <option value="saddle">鞍点場 (Saddle)</option>
+                    <option value="source">源点場 (Source)</option>
+                    <option value="sink">吸込み場 (Sink)</option>
+                    <option value="uniform">一様場 (Uniform)</option>
+                    <option value="dipole">双極子場 (Dipole)</option>
+                    <option value="waves">波動場 (Waves)</option>
+                    <option value="spiral">螺旋場 (Spiral)</option>
+                    <option value="magnetic">磁場 (Magnetic)</option>
+                    <option value="turbulence">乱流場 (Turbulence)</option>
+                </select>
+            </div>
+
+            <div class="field-equation" id="fieldEquation">
+                dx/dt = -y, dy/dt = x
+            </div>
+
+            <div class="control-group">
+                <label for="strength">場の強度</label>
+                <div class="slider-container">
+                    <input type="range" id="strength" min="0.1" max="5" step="0.1" value="1" oninput="updateStrength()">
+                    <span class="slider-value" id="strengthValue">1.0</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="particleCount">粒子数</label>
+                <div class="slider-container">
+                    <input type="range" id="particleCount" min="5" max="50" step="1" value="20" oninput="updateParticleCount()">
+                    <span class="slider-value" id="particleCountValue">20</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="trailLength">軌跡長</label>
+                <div class="slider-container">
+                    <input type="range" id="trailLength" min="10" max="500" step="10" value="100" oninput="updateTrailLength()">
+                    <span class="slider-value" id="trailLengthValue">100</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="stepSize">ステップサイズ</label>
+                <div class="slider-container">
+                    <input type="range" id="stepSize" min="0.001" max="0.05" step="0.001" value="0.01" oninput="updateStepSize()">
+                    <span class="slider-value" id="stepSizeValue">0.01</span>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button onclick="toggleSimulation()">開始/停止</button>
+                <button onclick="resetParticles()">リセット</button>
+            </div>
+
+            <div class="button-row">
+                <button onclick="clearTrails()">軌跡クリア</button>
+                <button onclick="saveImage()">画像保存</button>
+            </div>
+
+            <div class="control-group">
+                <label>プリセット場</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <button class="preset-btn" onclick="loadPreset(0)">渦巻銀河</button>
+                    <button class="preset-btn" onclick="loadPreset(1)">磁気双極子</button>
+                    <button class="preset-btn" onclick="loadPreset(2)">流体攪拌</button>
+                    <button class="preset-btn" onclick="loadPreset(3)">重力井戸</button>
+                    <button class="preset-btn" onclick="loadPreset(4)">電場</button>
+                    <button class="preset-btn" onclick="loadPreset(5)">海流</button>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+        <div class="info-panel">
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="fps">60</div>
+                    <div class="stat-label">FPS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="activeParticles">20</div>
+                    <div class="stat-label">粒子数</div>
+                </div>
+            </div>
+            <div style="font-size: 0.7em; color: #666; text-align: center;">
+                クリック: 粒子追加<br>
+                ドラッグ: 複数粒子<br>
+                右クリック: 場の中心移動
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let isRunning = false;
+        let fieldType = 'vortex';
+        let fieldStrength = 1.0;
+        let maxParticles = 20;
+        let trailLength = 100;
+        let stepSize = 0.01;
+        let fieldCenter = { x: 0, y: 0 };
+        let animationId = null;
+        let lastTime = 0;
+        let fps = 60;
+
+        // キャンバス初期化
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            fieldCenter.x = canvas.width / 2;
+            fieldCenter.y = canvas.height / 2;
+        }
+
+        // ベクトル場定義
+        const vectorFields = {
+            vortex: (x, y) => ({
+                x: -(y - fieldCenter.y) * fieldStrength,
+                y: (x - fieldCenter.x) * fieldStrength
+            }),
+            saddle: (x, y) => ({
+                x: (x - fieldCenter.x) * fieldStrength,
+                y: -(y - fieldCenter.y) * fieldStrength
+            }),
+            source: (x, y) => ({
+                x: (x - fieldCenter.x) * fieldStrength,
+                y: (y - fieldCenter.y) * fieldStrength
+            }),
+            sink: (x, y) => ({
+                x: -(x - fieldCenter.x) * fieldStrength,
+                y: -(y - fieldCenter.y) * fieldStrength
+            }),
+            uniform: (x, y) => ({
+                x: fieldStrength * 50,
+                y: 0
+            }),
+            dipole: (x, y) => {
+                const dx = x - fieldCenter.x;
+                const dy = y - fieldCenter.y;
+                const r2 = dx * dx + dy * dy + 1;
+                const r = Math.sqrt(r2);
+                return {
+                    x: fieldStrength * (3 * dx * dy) / (r2 * r),
+                    y: fieldStrength * (2 * dy * dy - dx * dx) / (r2 * r)
+                };
+            },
+            waves: (x, y) => ({
+                x: Math.sin((y - fieldCenter.y) * 0.01) * fieldStrength * 20,
+                y: Math.cos((x - fieldCenter.x) * 0.01) * fieldStrength * 20
+            }),
+            spiral: (x, y) => {
+                const dx = x - fieldCenter.x;
+                const dy = y - fieldCenter.y;
+                const r = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                return {
+                    x: fieldStrength * r * 0.001 * Math.cos(angle + Math.PI/2),
+                    y: fieldStrength * r * 0.001 * Math.sin(angle + Math.PI/2)
+                };
+            },
+            magnetic: (x, y) => {
+                const dx = x - fieldCenter.x;
+                const dy = y - fieldCenter.y;
+                const r2 = dx * dx + dy * dy + 100;
+                return {
+                    x: -dy * fieldStrength * 1000 / r2,
+                    y: dx * fieldStrength * 1000 / r2
+                };
+            },
+            turbulence: (x, y) => {
+                const t = performance.now() * 0.001;
+                const scale = 0.005;
+                return {
+                    x: fieldStrength * 30 * (Math.sin(x * scale + t) + Math.cos(y * scale * 1.3 + t * 0.7)),
+                    y: fieldStrength * 30 * (Math.cos(x * scale * 1.1 + t * 0.8) + Math.sin(y * scale + t * 0.9))
+                };
+            }
+        };
+
+        // 場の方程式表示
+        const fieldEquations = {
+            vortex: 'dx/dt = -y, dy/dt = x',
+            saddle: 'dx/dt = x, dy/dt = -y',
+            source: 'dx/dt = x, dy/dt = y',
+            sink: 'dx/dt = -x, dy/dt = -y',
+            uniform: 'dx/dt = c, dy/dt = 0',
+            dipole: 'dx/dt = 3xy/r³, dy/dt = (2y²-x²)/r³',
+            waves: 'dx/dt = sin(y), dy/dt = cos(x)',
+            spiral: 'dx/dt = r·cos(θ+π/2), dy/dt = r·sin(θ+π/2)',
+            magnetic: 'dx/dt = -y/r², dy/dt = x/r²',
+            turbulence: 'dx/dt = sin(x+t)+cos(y+t), dy/dt = cos(x+t)+sin(y+t)'
+        };
+
+        // 粒子クラス
+        class Particle {
+            constructor(x, y) {
+                this.position = { x, y };
+                this.trail = [{ x, y }];
+                this.color = this.generateColor();
+                this.age = 0;
+                this.maxAge = trailLength;
+            }
+
+            generateColor() {
+                const hue = Math.random() * 360;
+                return `hsl(${hue}, ${70 + Math.random() * 30}%, ${50 + Math.random() * 30}%)`;
+            }
+
+            update() {
+                if (!isRunning) return;
+
+                // Runge-Kutta 4次法
+                const k1 = this.getDerivative(this.position.x, this.position.y);
+                const k2 = this.getDerivative(
+                    this.position.x + k1.x * stepSize / 2,
+                    this.position.y + k1.y * stepSize / 2
+                );
+                const k3 = this.getDerivative(
+                    this.position.x + k2.x * stepSize / 2,
+                    this.position.y + k2.y * stepSize / 2
+                );
+                const k4 = this.getDerivative(
+                    this.position.x + k3.x * stepSize,
+                    this.position.y + k3.y * stepSize
+                );
+
+                // 位置更新
+                this.position.x += stepSize * (k1.x + 2*k2.x + 2*k3.x + k4.x) / 6;
+                this.position.y += stepSize * (k1.y + 2*k2.y + 2*k3.y + k4.y) / 6;
+
+                // 軌跡記録
+                this.trail.push({ x: this.position.x, y: this.position.y });
+                if (this.trail.length > this.maxAge) {
+                    this.trail.shift();
+                }
+
+                this.age++;
+
+                // 境界チェック
+                if (this.position.x < 0 || this.position.x > canvas.width ||
+                    this.position.y < 0 || this.position.y > canvas.height) {
+                    this.respawn();
+                }
+            }
+
+            getDerivative(x, y) {
+                const field = vectorFields[fieldType](x, y);
+                return field;
+            }
+
+            respawn() {
+                this.position.x = Math.random() * canvas.width;
+                this.position.y = Math.random() * canvas.height;
+                this.trail = [{ x: this.position.x, y: this.position.y }];
+                this.age = 0;
+                this.color = this.generateColor();
+            }
+
+            draw() {
+                if (this.trail.length < 2) return;
+
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // グラデーション軌跡
+                for (let i = 1; i < this.trail.length; i++) {
+                    const alpha = i / this.trail.length;
+                    const point = this.trail[i];
+                    const prevPoint = this.trail[i - 1];
+
+                    ctx.globalAlpha = alpha * 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(prevPoint.x, prevPoint.y);
+                    ctx.lineTo(point.x, point.y);
+                    ctx.stroke();
+                }
+
+                // 粒子本体（光る点）
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // アニメーションループ
+        function animate(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            // FPS計算
+            fps = Math.round(1000 / deltaTime);
+            document.getElementById('fps').textContent = fps;
+
+            // キャンバスクリア（フェード効果）
+            ctx.fillStyle = 'rgba(13, 20, 33, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 粒子更新・描画
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            // ベクトル場可視化（オプション）
+            if (document.getElementById('fieldType').value !== 'turbulence') {
+                drawVectorField();
+            }
+
+            document.getElementById('activeParticles').textContent = particles.length;
+
+            if (isRunning) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        // ベクトル場の矢印描画
+        function drawVectorField() {
+            const step = 50;
+            ctx.strokeStyle = 'rgba(100, 181, 246, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.3;
+
+            for (let x = step; x < canvas.width; x += step) {
+                for (let y = step; y < canvas.height; y += step) {
+                    const field = vectorFields[fieldType](x, y);
+                    const magnitude = Math.sqrt(field.x * field.x + field.y * field.y);
+                    
+                    if (magnitude > 0.1) {
+                        const length = Math.min(magnitude * 0.5, 20);
+                        const endX = x + (field.x / magnitude) * length;
+                        const endY = y + (field.y / magnitude) * length;
+
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+
+                        // 矢印
+                        const angle = Math.atan2(field.y, field.x);
+                        const arrowLength = 5;
+                        ctx.beginPath();
+                        ctx.moveTo(endX, endY);
+                        ctx.lineTo(
+                            endX - arrowLength * Math.cos(angle - Math.PI / 6),
+                            endY - arrowLength * Math.sin(angle - Math.PI / 6)
+                        );
+                        ctx.moveTo(endX, endY);
+                        ctx.lineTo(
+                            endX - arrowLength * Math.cos(angle + Math.PI / 6),
+                            endY - arrowLength * Math.sin(angle + Math.PI / 6)
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // コントロール関数
+        function updateField() {
+            fieldType = document.getElementById('fieldType').value;
+            document.getElementById('fieldEquation').textContent = fieldEquations[fieldType];
+        }
+
+        function updateStrength() {
+            fieldStrength = parseFloat(document.getElementById('strength').value);
+            document.getElementById('strengthValue').textContent = fieldStrength.toFixed(1);
+        }
+
+        function updateParticleCount() {
+            maxParticles = parseInt(document.getElementById('particleCount').value);
+            document.getElementById('particleCountValue').textContent = maxParticles;
+            
+            // 粒子数調整
+            while (particles.length > maxParticles) {
+                particles.pop();
+            }
+            while (particles.length < maxParticles) {
+                particles.push(new Particle(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+
+        function updateTrailLength() {
+            trailLength = parseInt(document.getElementById('trailLength').value);
+            document.getElementById('trailLengthValue').textContent = trailLength;
+            particles.forEach(particle => {
+                particle.maxAge = trailLength;
+            });
+        }
+
+        function updateStepSize() {
+            stepSize = parseFloat(document.getElementById('stepSize').value);
+            document.getElementById('stepSizeValue').textContent = stepSize.toFixed(3);
+        }
+
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            if (isRunning) {
+                lastTime = performance.now();
+                animate(lastTime);
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resetParticles() {
+            particles = [];
+            for (let i = 0; i < maxParticles; i++) {
+                particles.push(new Particle(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+
+        function clearTrails() {
+            particles.forEach(particle => {
+                particle.trail = [{ x: particle.position.x, y: particle.position.y }];
+            });
+        }
+
+        function saveImage() {
+            const link = document.createElement('a');
+            link.download = `vector_field_${fieldType}_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function toggleControlPanel() {
+            const panel = document.getElementById('controlPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        // プリセット場
+        const presets = [
+            { type: 'spiral', strength: 2.0, particles: 30, trail: 200 },
+            { type: 'magnetic', strength: 1.5, particles: 25, trail: 150 },
+            { type: 'turbulence', strength: 0.8, particles: 40, trail: 80 },
+            { type: 'sink', strength: 0.5, particles: 35, trail: 120 },
+            { type: 'dipole', strength: 3.0, particles: 20, trail: 180 },
+            { type: 'waves', strength: 1.2, particles: 45, trail: 100 }
+        ];
+
+        function loadPreset(index) {
+            const preset = presets[index];
+            fieldType = preset.type;
+            fieldStrength = preset.strength;
+            maxParticles = preset.particles;
+            trailLength = preset.trail;
+
+            // UI更新
+            document.getElementById('fieldType').value = fieldType;
+            document.getElementById('strength').value = fieldStrength;
+            document.getElementById('particleCount').value = maxParticles;
+            document.getElementById('trailLength').value = trailLength;
+
+            updateField();
+            updateStrength();
+            updateParticleCount();
+            updateTrailLength();
+            resetParticles();
+        }
+
+        // イベントリスナー
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (particles.length < 50) {
+                particles.push(new Particle(x, y));
+            }
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            fieldCenter.x = e.clientX - rect.left;
+            fieldCenter.y = e.clientY - rect.top;
+        });
+
+        let isMouseDown = false;
+        canvas.addEventListener('mousedown', () => { isMouseDown = true; });
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('mousemove', (e) => {
+            if (isMouseDown && particles.length < 50) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                particles.push(new Particle(x, y));
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            initCanvas();
+            resetParticles();
+        });
+
+        // 初期化
+        initCanvas();
+        resetParticles();
+        toggleSimulation();
+    </script>
+</body>
+</html>
