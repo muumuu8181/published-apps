@@ -41,6 +41,68 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             z-index: 100;
+            user-select: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .ui-panel.draggable {
+            cursor: move;
+        }
+
+        .ui-panel.dragging {
+            opacity: 0.8;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-header {
+            position: relative;
+            cursor: move;
+            padding: 5px 0 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+        }
+
+        .panel-header::after {
+            content: "⋮⋮⋮";
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        .minimize-btn {
+            position: absolute;
+            top: 5px;
+            right: 25px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .minimize-btn:hover {
+            color: #4ecdc4;
+        }
+
+        .ui-panel.minimized {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .ui-panel.minimized:hover {
+            opacity: 0.6;
         }
 
         .control-panel {
@@ -300,8 +362,11 @@
 
         <div class="error-message" id="errorMessage"></div>
 
-        <div class="ui-panel control-panel">
-            <h1>🌊 ベクトル場流線シミュレーター</h1>
+        <div class="ui-panel control-panel draggable" id="controlPanel">
+            <div class="panel-header">
+                <button class="minimize-btn" onclick="togglePanel('controlPanel')">−</button>
+                <h1>🌊 ベクトル場流線シミュレーター</h1>
+            </div>
             
             <div class="section">
                 <h3>⚙️ ベクトル場設定</h3>
@@ -381,8 +446,11 @@
             </div>
         </div>
 
-        <div class="ui-panel info-panel">
-            <h3>📊 シミュレーション情報</h3>
+        <div class="ui-panel info-panel draggable" id="infoPanel">
+            <div class="panel-header">
+                <button class="minimize-btn" onclick="togglePanel('infoPanel')">−</button>
+                <h3>📊 シミュレーション情報</h3>
+            </div>
             <div class="stats">
                 <div class="stats-item">
                     <span>状態:</span>
@@ -412,6 +480,8 @@
                 <div>• ホイール: ズーム</div>
                 <div>• 右クリック: パン</div>
                 <div>• クリック: 粒子追加</div>
+                <div style="color: #4ecdc4;">• 2本指: パネル移動</div>
+                <div style="color: #4ecdc4;">• タイトルドラッグ: 移動</div>
             </div>
         </div>
 
@@ -1078,10 +1148,139 @@
             }, 5000);
         }
 
+        // パネルドラッグ機能
+        function initPanelDragging() {
+            const panels = document.querySelectorAll('.ui-panel.draggable');
+            
+            panels.forEach(panel => {
+                let isDragging = false;
+                let startX, startY, startLeft, startTop;
+                let touchCount = 0;
+                
+                // マウスイベント
+                const header = panel.querySelector('.panel-header');
+                header.addEventListener('mousedown', startDrag);
+                
+                // タッチイベント
+                panel.addEventListener('touchstart', (e) => {
+                    touchCount = e.touches.length;
+                    if (touchCount === 2) {
+                        e.preventDefault();
+                        startDrag(e.touches[0]);
+                    }
+                });
+                
+                panel.addEventListener('touchmove', (e) => {
+                    if (isDragging && touchCount === 2) {
+                        e.preventDefault();
+                        drag(e.touches[0]);
+                    }
+                });
+                
+                panel.addEventListener('touchend', () => {
+                    touchCount = 0;
+                    endDrag();
+                });
+                
+                function startDrag(e) {
+                    isDragging = true;
+                    panel.classList.add('dragging');
+                    
+                    const rect = panel.getBoundingClientRect();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = rect.left;
+                    startTop = rect.top;
+                    
+                    document.addEventListener('mousemove', drag);
+                    document.addEventListener('mouseup', endDrag);
+                }
+                
+                function drag(e) {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    
+                    let newLeft = startLeft + deltaX;
+                    let newTop = startTop + deltaY;
+                    
+                    // 境界チェック
+                    const panelRect = panel.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    
+                    newLeft = Math.max(0, Math.min(newLeft, viewportWidth - panelRect.width));
+                    newTop = Math.max(0, Math.min(newTop, viewportHeight - panelRect.height));
+                    
+                    panel.style.left = newLeft + 'px';
+                    panel.style.top = newTop + 'px';
+                    panel.style.right = 'auto';
+                    panel.style.bottom = 'auto';
+                }
+                
+                function endDrag() {
+                    if (!isDragging) return;
+                    
+                    isDragging = false;
+                    panel.classList.remove('dragging');
+                    
+                    document.removeEventListener('mousemove', drag);
+                    document.removeEventListener('mouseup', endDrag);
+                    
+                    // 位置を保存
+                    saveLayout();
+                }
+            });
+        }
+        
+        // パネル最小化機能
+        function togglePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            panel.classList.toggle('minimized');
+            saveLayout();
+        }
+        
+        // レイアウト保存
+        function saveLayout() {
+            const layout = {};
+            document.querySelectorAll('.ui-panel.draggable').forEach(panel => {
+                const rect = panel.getBoundingClientRect();
+                layout[panel.id] = {
+                    left: panel.style.left || rect.left + 'px',
+                    top: panel.style.top || rect.top + 'px',
+                    minimized: panel.classList.contains('minimized')
+                };
+            });
+            localStorage.setItem('panelLayout', JSON.stringify(layout));
+        }
+        
+        // レイアウト復元
+        function restoreLayout() {
+            const layout = JSON.parse(localStorage.getItem('panelLayout') || '{}');
+            Object.keys(layout).forEach(panelId => {
+                const panel = document.getElementById(panelId);
+                if (panel && layout[panelId]) {
+                    const config = layout[panelId];
+                    if (config.left && config.top) {
+                        panel.style.left = config.left;
+                        panel.style.top = config.top;
+                        panel.style.right = 'auto';
+                        panel.style.bottom = 'auto';
+                    }
+                    if (config.minimized) {
+                        panel.classList.add('minimized');
+                    }
+                }
+            });
+        }
+
         // 初期化実行
         window.addEventListener('load', () => {
             try {
                 init();
+                initPanelDragging();
+                restoreLayout();
             } catch (error) {
                 console.error('初期化エラー:', error);
                 showError('シミュレーターの初期化に失敗しました: ' + error.message);
