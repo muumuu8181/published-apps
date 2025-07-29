@@ -106,11 +106,24 @@
         }
 
         .control-panel {
-            top: 20px;
+            bottom: 20px;
             left: 20px;
-            width: 300px;
-            max-height: calc(100vh - 40px);
+            right: 20px;
+            width: auto;
+            max-width: calc(100vw - 300px);
+            max-height: 300px;
             overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .control-panel {
+                max-width: calc(100vw - 40px);
+                flex-direction: column;
+                max-height: 250px;
+            }
         }
 
         .info-panel {
@@ -149,6 +162,15 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             border-left: 3px solid #4ecdc4;
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        @media (max-width: 768px) {
+            .section {
+                min-width: 100%;
+                margin-bottom: 15px;
+            }
         }
 
         .section h3 {
