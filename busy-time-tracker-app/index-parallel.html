@@ -310,6 +310,56 @@
             50% { opacity: 0.5; }
         }
 
+        /* Running Activities List */
+        .running-activities {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .running-activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .running-activity-item:hover {
+            background: #e8f5e9;
+            border-color: #4CAF50;
+        }
+
+        .running-activity-name {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .running-activity-time {
+            color: #666;
+            font-family: monospace;
+            margin-right: 10px;
+        }
+
+        .stop-activity-btn {
+            padding: 4px 8px;
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s ease;
+        }
+
+        .stop-activity-btn:hover {
+            background: #d32f2f;
+        }
+
         /* Summary Section */
         .summary-grid {
             display: grid;
@@ -612,6 +662,9 @@
                 <div class="status-indicator">
                     <span class="status-dot" id="status-dot"></span>
                     <span id="status-text">記録準備完了</span>
+                </div>
+                <div id="running-activities" class="running-activities">
+                    <!-- Running activities will be listed here -->
                 </div>
             </div>
         </div>
@@ -1014,6 +1067,7 @@
             updateStatus() {
                 const statusDot = document.getElementById('status-dot');
                 const statusText = document.getElementById('status-text');
+                const runningActivitiesDiv = document.getElementById('running-activities');
                 const totalRunning = Object.values(this.runningRecords).reduce((sum, arr) => sum + arr.length, 0);
                 
                 if (totalRunning > 0) {
@@ -1023,9 +1077,44 @@
                         .map(cat => `${cat}(${this.runningRecords[cat].length})`)
                         .join(', ');
                     statusText.textContent = `実行中: ${categories}`;
+                    
+                    // Show running activities list
+                    runningActivitiesDiv.innerHTML = '';
+                    Object.entries(this.runningRecords).forEach(([category, records]) => {
+                        records.forEach(record => {
+                            const activityDiv = document.createElement('div');
+                            activityDiv.className = 'running-activity-item';
+                            
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'running-activity-name';
+                            nameSpan.textContent = record.category;
+                            
+                            const timeSpan = document.createElement('span');
+                            timeSpan.className = 'running-activity-time';
+                            const duration = Date.now() - record.start;
+                            timeSpan.textContent = this.formatDuration(duration);
+                            
+                            const stopBtn = document.createElement('button');
+                            stopBtn.className = 'stop-activity-btn';
+                            stopBtn.textContent = '停止';
+                            stopBtn.onclick = () => {
+                                try {
+                                    this.stopActivity(record.id);
+                                } catch (error) {
+                                    this.showMessage('停止エラー: ' + error.message, 'error');
+                                }
+                            };
+                            
+                            activityDiv.appendChild(nameSpan);
+                            activityDiv.appendChild(timeSpan);
+                            activityDiv.appendChild(stopBtn);
+                            runningActivitiesDiv.appendChild(activityDiv);
+                        });
+                    });
                 } else {
                     statusDot.classList.remove('running');
                     statusText.textContent = '記録準備完了';
+                    runningActivitiesDiv.innerHTML = '';
                 }
             }
 
@@ -1034,8 +1123,36 @@
                 // Update every second
                 this.timerInterval = setInterval(() => {
                     this.updateRunningTimelineEntries();
+                    this.updateRunningActivitiesDisplay();
                     this.updateSummary();
                 }, 1000);
+            }
+
+            // Update running activities display
+            updateRunningActivitiesDisplay() {
+                const runningActivitiesDiv = document.getElementById('running-activities');
+                const timeSpans = runningActivitiesDiv.querySelectorAll('.running-activity-time');
+                
+                timeSpans.forEach((timeSpan, index) => {
+                    const activityItem = timeSpan.parentElement;
+                    const recordId = parseInt(activityItem.dataset.recordId);
+                    
+                    // Find the record and update time
+                    Object.values(this.runningRecords).forEach(records => {
+                        records.forEach(record => {
+                            if (record.id === recordId || 
+                                (activityItem.querySelector('.running-activity-name').textContent === record.category)) {
+                                const duration = Date.now() - record.start;
+                                timeSpan.textContent = this.formatDuration(duration);
+                                
+                                // Store record ID for future reference
+                                if (!activityItem.dataset.recordId) {
+                                    activityItem.dataset.recordId = record.id;
+                                }
+                            }
+                        });
+                    });
+                });
             }
 
             // Update running timeline entries
