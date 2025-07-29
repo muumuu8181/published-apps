@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グラフアルゴリズムビジュアライザー - Graph Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        .control-group h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .input-row label {
+            min-width: 80px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+
+        .input-row input, .input-row select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .visualization-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .stats-panel h4 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .stats-panel .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .algorithm-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .step-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .node-input {
+            width: 100%;
+            height: 120px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            resize: vertical;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .control-panel {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 グラフアルゴリズムビジュアライザー</h1>
+            <p>BFS・DFS・Dijkstra・A*アルゴリズムのステップバイステップ実行</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>📊 グラフ設定</h3>
+                <div class="input-row">
+                    <label>ノード数:</label>
+                    <input type="range" id="nodeCount" min="5" max="50" value="10">
+                    <span id="nodeCountValue">10</span>
+                </div>
+                <div class="input-row">
+                    <label>密度:</label>
+                    <input type="range" id="density" min="0.1" max="0.8" step="0.1" value="0.3">
+                    <span id="densityValue">0.3</span>
+                </div>
+                <div class="input-row">
+                    <label>重み範囲:</label>
+                    <input type="range" id="weightRange" min="1" max="20" value="10">
+                    <span id="weightRangeValue">1-10</span>
+                </div>
+                <button class="btn btn-secondary" onclick="generateRandomGraph()">🎲 ランダム生成</button>
+                <button class="btn btn-secondary" onclick="clearGraph()">🗑️ クリア</button>
+            </div>
+
+            <div class="control-group">
+                <h3>🎯 アルゴリズム選択</h3>
+                <select id="algorithmSelect">
+                    <option value="bfs">幅優先探索 (BFS)</option>
+                    <option value="dfs">深さ優先探索 (DFS)</option>
+                    <option value="dijkstra">ダイクストラ法</option>
+                    <option value="astar">A*アルゴリズム</option>
+                </select>
+                <div class="input-row">
+                    <label>開始ノード:</label>
+                    <input type="number" id="startNode" min="0" max="49" value="0">
+                </div>
+                <div class="input-row">
+                    <label>終了ノード:</label>
+                    <input type="number" id="endNode" min="0" max="49" value="5">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>⚡ 実行制御</h3>
+                <div class="algorithm-controls">
+                    <button class="btn btn-primary" onclick="startAlgorithm()">▶️ 開始</button>
+                    <button class="btn btn-secondary" onclick="pauseAlgorithm()" id="pauseBtn">⏸️ 一時停止</button>
+                    <button class="btn btn-secondary" onclick="stepAlgorithm()">⏭️ 1ステップ</button>
+                    <button class="btn btn-danger" onclick="resetAlgorithm()">🔄 リセット</button>
+                </div>
+                <div class="input-row">
+                    <label>速度:</label>
+                    <input type="range" id="speed" min="100" max="2000" step="100" value="800">
+                    <span id="speedValue">800ms</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>📝 手動入力</h3>
+                <textarea id="graphInput" class="node-input" placeholder="隣接リスト形式で入力:
+0: 1(5), 2(3)
+1: 0(5), 3(2)
+2: 0(3), 3(4)
+3: 1(2), 2(4)"></textarea>
+                <button class="btn btn-secondary" onclick="parseGraphInput()">📥 読み込み</button>
+            </div>
+
+            <div class="step-info" id="stepInfo">
+                <strong>準備完了</strong><br>
+                グラフを生成してアルゴリズムを開始してください
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <canvas id="graph-canvas"></canvas>
+            
+            <div class="stats-panel" id="statsPanel">
+                <h4>📈 統計情報</h4>
+                <div class="stat-row">
+                    <span>ステップ数:</span>
+                    <span id="stepCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>訪問済み:</span>
+                    <span id="visitedCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>キューサイズ:</span>
+                    <span id="queueSize">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>最短距離:</span>
+                    <span id="shortestDistance">-</span>
+                </div>
+                <div class="stat-row">
+                    <span>実行時間:</span>
+                    <span id="executionTime">0ms</span>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #90EE90;"></div>
+                    <span>開始ノード</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FF6B6B;"></div>
+                    <span>終了ノード</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FFD700;"></div>
+                    <span>現在処理中</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #87CEEB;"></div>
+                    <span>訪問済み</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #DDA0DD;"></div>
+                    <span>キュー内</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グラフアルゴリズムビジュアライザー - メインクラス
+        class GraphAlgorithmVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('graph-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.graph = new Map();
+                this.nodes = [];
+                this.edges = [];
+                this.isRunning = false;
+                this.isPaused = false;
+                this.currentStep = 0;
+                this.algorithm = null;
+                this.startTime = 0;
+                
+                // ノードの状態定義
+                this.NodeState = {
+                    UNVISITED: 'unvisited',
+                    VISITED: 'visited',
+                    CURRENT: 'current',
+                    QUEUE: 'queue',
+                    START: 'start',
+                    END: 'end',
+                    PATH: 'path'
+                };
+                
+                this.initializeCanvas();
+                this.setupEventListeners();
+                this.generateRandomGraph();
+            }
+
+            initializeCanvas() {
+                const resizeCanvas = () => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.canvas.width = rect.width;
+                    this.canvas.height = rect.height;
+                    this.redraw();
+                };
+                
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+            }
+
+            setupEventListeners() {
+                // スライダーの値更新
+                document.getElementById('nodeCount').addEventListener('input', (e) => {
+                    document.getElementById('nodeCountValue').textContent = e.target.value;
+                });
+                
+                document.getElementById('density').addEventListener('input', (e) => {
+                    document.getElementById('densityValue').textContent = e.target.value;
+                });
+                
+                document.getElementById('weightRange').addEventListener('input', (e) => {
+                    document.getElementById('weightRangeValue').textContent = `1-${e.target.value}`;
+                });
+                
+                document.getElementById('speed').addEventListener('input', (e) => {
+                    document.getElementById('speedValue').textContent = `${e.target.value}ms`;
+                });
+                
+                // キャンバスクリックでノード選択
+                this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            handleCanvasClick(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // クリック位置に最も近いノードを見つける
+                let nearestNode = null;
+                let minDistance = Infinity;
+                
+                this.nodes.forEach((node, index) => {
+                    const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+                    if (distance < 30 && distance < minDistance) {
+                        minDistance = distance;
+                        nearestNode = index;
+                    }
+                });
+                
+                if (nearestNode !== null) {
+                    // Shiftキーで終了ノード設定、通常クリックで開始ノード設定
+                    if (e.shiftKey) {
+                        document.getElementById('endNode').value = nearestNode;
+                    } else {
+                        document.getElementById('startNode').value = nearestNode;
+                    }
+                    this.redraw();
+                }
+            }
+
+            generateRandomGraph() {
+                const nodeCount = parseInt(document.getElementById('nodeCount').value);
+                const density = parseFloat(document.getElementById('density').value);
+                const weightRange = parseInt(document.getElementById('weightRange').value);
+                
+                this.graph.clear();
+                this.nodes = [];
+                this.edges = [];
+                
+                // ノードの配置（円形配置＋ランダム要素）
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.7;
+                
+                for (let i = 0; i < nodeCount; i++) {
+                    const angle = (2 * Math.PI * i) / nodeCount;
+                    const randomRadius = radius * (0.7 + Math.random() * 0.3);
+                    const x = centerX + randomRadius * Math.cos(angle);
+                    const y = centerY + randomRadius * Math.sin(angle);
+                    
+                    this.nodes.push({
+                        id: i,
+                        x: x,
+                        y: y,
+                        state: this.NodeState.UNVISITED,
+                        distance: Infinity,
+                        parent: null,
+                        heuristic: 0
+                    });
+                    
+                    this.graph.set(i, []);
+                }
+                
+                // エッジの生成（Erdős-Rényiモデル）
+                for (let i = 0; i < nodeCount; i++) {
+                    for (let j = i + 1; j < nodeCount; j++) {
+                        if (Math.random() < density) {
+                            const weight = Math.floor(Math.random() * weightRange) + 1;
+                            this.addEdge(i, j, weight);
+                        }
+                    }
+                }
+                
+                // 連結性の確保（最小スパニングツリー的に接続）
+                if (this.graph.get(0).length === 0) {
+                    for (let i = 1; i < nodeCount; i++) {
+                        if (Math.random() < 0.3) {
+                            const weight = Math.floor(Math.random() * weightRange) + 1;
+                            this.addEdge(0, i, weight);
+                        }
+                    }
+                }
+                
+                this.resetAlgorithmState();
+                this.redraw();
+                this.updateStepInfo('新しいグラフが生成されました');
+            }
+
+            addEdge(from, to, weight) {
+                this.graph.get(from).push({ node: to, weight: weight });
+                this.graph.get(to).push({ node: from, weight: weight });
+                
+                this.edges.push({
+                    from: from,
+                    to: to,
+                    weight: weight,
+                    state: 'normal'
+                });
+            }
+
+            clearGraph() {
+                this.graph.clear();
+                this.nodes = [];
+                this.edges = [];
+                this.resetAlgorithmState();
+                this.redraw();
+                this.updateStepInfo('グラフがクリアされました');
+            }
+
+            parseGraphInput() {
+                const input = document.getElementById('graphInput').value.trim();
+                if (!input) return;
+                
+                this.graph.clear();
+                this.nodes = [];
+                this.edges = [];
+                
+                const lines = input.split('\n');
+                const nodeSet = new Set();
+                
+                // ノードの収集
+                lines.forEach(line => {
+                    const match = line.match(/^(\d+):/);
+                    if (match) {
+                        nodeSet.add(parseInt(match[1]));
+                        
+                        // 隣接ノードの収集
+                        const adjMatches = line.matchAll(/(\d+)\((\d+)\)/g);
+                        for (const adjMatch of adjMatches) {
+                            nodeSet.add(parseInt(adjMatch[1]));
+                        }
+                    }
+                });
+                
+                // ノードの配置
+                const nodeCount = nodeSet.size;
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.7;
+                
+                Array.from(nodeSet).sort((a, b) => a - b).forEach((nodeId, index) => {
+                    const angle = (2 * Math.PI * index) / nodeCount;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    
+                    this.nodes[nodeId] = {
+                        id: nodeId,
+                        x: x,
+                        y: y,
+                        state: this.NodeState.UNVISITED,
+                        distance: Infinity,
+                        parent: null,
+                        heuristic: 0
+                    };
+                    
+                    this.graph.set(nodeId, []);
+                });
+                
+                // エッジの解析
+                lines.forEach(line => {
+                    const match = line.match(/^(\d+):(.*)/);
+                    if (match) {
+                        const fromNode = parseInt(match[1]);
+                        const adjString = match[2];
+                        
+                        const adjMatches = adjString.matchAll(/(\d+)\((\d+)\)/g);
+                        for (const adjMatch of adjMatches) {
+                            const toNode = parseInt(adjMatch[1]);
+                            const weight = parseInt(adjMatch[2]);
+                            
+                            // 重複エッジを避ける
+                            const existingEdge = this.edges.find(e => 
+                                (e.from === fromNode && e.to === toNode) ||
+                                (e.from === toNode && e.to === fromNode)
+                            );
+                            
+                            if (!existingEdge) {
+                                this.addEdge(fromNode, toNode, weight);
+                            }
+                        }
+                    }
+                });
+                
+                this.resetAlgorithmState();
+                this.redraw();
+                this.updateStepInfo('グラフが読み込まれました');
+            }
+
+            resetAlgorithmState() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.currentStep = 0;
+                this.algorithm = null;
+                
+                this.nodes.forEach(node => {
+                    node.state = this.NodeState.UNVISITED;
+                    node.distance = Infinity;
+                    node.parent = null;
+                    node.heuristic = 0;
+                });
+                
+                this.edges.forEach(edge => {
+                    edge.state = 'normal';
+                });
+                
+                this.updateStats(0, 0, 0, '-', 0);
+                this.updateProgress(0);
+                document.getElementById('pauseBtn').textContent = '⏸️ 一時停止';
+            }
+
+            async startAlgorithm() {
+                if (this.isRunning && !this.isPaused) return;
+                
+                const algorithmType = document.getElementById('algorithmSelect').value;
+                const startNode = parseInt(document.getElementById('startNode').value);
+                const endNode = parseInt(document.getElementById('endNode').value);
+                
+                if (!this.nodes[startNode] || !this.nodes[endNode]) {
+                    this.updateStepInfo('無効な開始/終了ノードです');
+                    return;
+                }
+                
+                if (!this.isPaused) {
+                    this.resetAlgorithmState();
+                    this.nodes[startNode].state = this.NodeState.START;
+                    this.nodes[endNode].state = this.NodeState.END;
+                    
+                    // アルゴリズムの初期化
+                    switch (algorithmType) {
+                        case 'bfs':
+                            this.algorithm = new BFSAlgorithm(this, startNode, endNode);
+                            break;
+                        case 'dfs':
+                            this.algorithm = new DFSAlgorithm(this, startNode, endNode);
+                            break;
+                        case 'dijkstra':
+                            this.algorithm = new DijkstraAlgorithm(this, startNode, endNode);
+                            break;
+                        case 'astar':
+                            this.algorithm = new AStarAlgorithm(this, startNode, endNode);
+                            break;
+                    }
+                    
+                    this.startTime = Date.now();
+                }
+                
+                this.isRunning = true;
+                this.isPaused = false;
+                document.getElementById('pauseBtn').textContent = '⏸️ 一時停止';
+                
+                await this.runAlgorithmLoop();
+            }
+
+            async runAlgorithmLoop() {
+                const speed = parseInt(document.getElementById('speed').value);
+                
+                while (this.isRunning && !this.isPaused && this.algorithm) {
+                    const result = this.algorithm.step();
+                    this.currentStep++;
+                    
+                    this.redraw();
+                    this.updateStats(
+                        this.currentStep,
+                        this.algorithm.getVisitedCount(),
+                        this.algorithm.getQueueSize(),
+                        this.algorithm.getShortestDistance(),
+                        Date.now() - this.startTime
+                    );
+                    
+                    const progress = this.algorithm.getProgress();
+                    this.updateProgress(progress);
+                    
+                    if (result.finished) {
+                        this.isRunning = false;
+                        this.highlightPath(result.path);
+                        this.updateStepInfo(result.message);
+                        break;
+                    } else {
+                        this.updateStepInfo(result.message);
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, speed));
+                }
+            }
+
+            pauseAlgorithm() {
+                if (this.isRunning) {
+                    this.isPaused = !this.isPaused;
+                    document.getElementById('pauseBtn').textContent = 
+                        this.isPaused ? '▶️ 再開' : '⏸️ 一時停止';
+                    
+                    if (!this.isPaused) {
+                        this.runAlgorithmLoop();
+                    }
+                }
+            }
+
+            stepAlgorithm() {
+                if (!this.algorithm) {
+                    this.startAlgorithm();
+                    return;
+                }
+                
+                if (this.isRunning && !this.isPaused) {
+                    this.pauseAlgorithm();
+                }
+                
+                const result = this.algorithm.step();
+                this.currentStep++;
+                
+                this.redraw();
+                this.updateStats(
+                    this.currentStep,
+                    this.algorithm.getVisitedCount(),
+                    this.algorithm.getQueueSize(),
+                    this.algorithm.getShortestDistance(),
+                    Date.now() - this.startTime
+                );
+                
+                const progress = this.algorithm.getProgress();
+                this.updateProgress(progress);
+                
+                if (result.finished) {
+                    this.isRunning = false;
+                    this.highlightPath(result.path);
+                }
+                
+                this.updateStepInfo(result.message);
+            }
+
+            resetAlgorithm() {
+                this.resetAlgorithmState();
+                this.redraw();
+                this.updateStepInfo('アルゴリズムがリセットされました');
+            }
+
+            highlightPath(path) {
+                if (!path || path.length === 0) return;
+                
+                // パス上のノードをハイライト
+                for (let i = 0; i < path.length; i++) {
+                    if (this.nodes[path[i]].state !== this.NodeState.START && 
+                        this.nodes[path[i]].state !== this.NodeState.END) {
+                        this.nodes[path[i]].state = this.NodeState.PATH;
+                    }
+                }
+                
+                // パス上のエッジをハイライト
+                for (let i = 0; i < path.length - 1; i++) {
+                    const edge = this.edges.find(e => 
+                        (e.from === path[i] && e.to === path[i + 1]) ||
+                        (e.from === path[i + 1] && e.to === path[i])
+                    );
+                    if (edge) {
+                        edge.state = 'path';
+                    }
+                }
+            }
+
+            redraw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // エッジの描画
+                this.edges.forEach(edge => {
+                    this.drawEdge(edge);
+                });
+                
+                // ノードの描画
+                this.nodes.forEach(node => {
+                    this.drawNode(node);
+                });
+            }
+
+            drawEdge(edge) {
+                const fromNode = this.nodes[edge.from];
+                const toNode = this.nodes[edge.to];
+                
+                if (!fromNode || !toNode) return;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(fromNode.x, fromNode.y);
+                this.ctx.lineTo(toNode.x, toNode.y);
+                
+                if (edge.state === 'path') {
+                    this.ctx.strokeStyle = '#FF6B6B';
+                    this.ctx.lineWidth = 4;
+                } else {
+                    this.ctx.strokeStyle = '#B0B0B0';
+                    this.ctx.lineWidth = 2;
+                }
+                
+                this.ctx.stroke();
+                
+                // 重みの表示
+                const midX = (fromNode.x + toNode.x) / 2;
+                const midY = (fromNode.y + toNode.y) / 2;
+                
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.fillRect(midX - 12, midY - 8, 24, 16);
+                this.ctx.strokeStyle = '#666666';
+                this.ctx.strokeRect(midX - 12, midY - 8, 24, 16);
+                
+                this.ctx.fillStyle = '#333333';
+                this.ctx.font = '12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(edge.weight.toString(), midX, midY);
+            }
+
+            drawNode(node) {
+                const colors = {
+                    [this.NodeState.UNVISITED]: '#E0E0E0',
+                    [this.NodeState.VISITED]: '#87CEEB',
+                    [this.NodeState.CURRENT]: '#FFD700',
+                    [this.NodeState.QUEUE]: '#DDA0DD',
+                    [this.NodeState.START]: '#90EE90',
+                    [this.NodeState.END]: '#FF6B6B',
+                    [this.NodeState.PATH]: '#FFA500'
+                };
+                
+                // ノードの影
+                this.ctx.beginPath();
+                this.ctx.arc(node.x + 2, node.y + 2, 20, 0, 2 * Math.PI);
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.fill();
+                
+                // ノード本体
+                this.ctx.beginPath();
+                this.ctx.arc(node.x, node.y, 20, 0, 2 * Math.PI);
+                this.ctx.fillStyle = colors[node.state] || colors[this.NodeState.UNVISITED];
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#333333';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+                
+                // ノードID
+                this.ctx.fillStyle = '#333333';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(node.id.toString(), node.x, node.y);
+                
+                // 距離の表示（Dijkstra、A*用）
+                if (node.distance !== Infinity && node.distance > 0) {
+                    this.ctx.fillStyle = '#666666';
+                    this.ctx.font = '10px Arial';
+                    this.ctx.fillText(node.distance.toString(), node.x, node.y + 30);
+                }
+            }
+
+            updateStats(steps, visited, queueSize, distance, time) {
+                document.getElementById('stepCount').textContent = steps;
+                document.getElementById('visitedCount').textContent = visited;
+                document.getElementById('queueSize').textContent = queueSize;
+                document.getElementById('shortestDistance').textContent = distance;
+                document.getElementById('executionTime').textContent = `${time}ms`;
+            }
+
+            updateProgress(progress) {
+                document.getElementById('progressBar').style.width = `${progress}%`;
+            }
+
+            updateStepInfo(message) {
+                document.getElementById('stepInfo').innerHTML = `<strong>ステップ ${this.currentStep}:</strong><br>${message}`;
+            }
+        }
+
+        // 幅優先探索アルゴリズム
+        class BFSAlgorithm {
+            constructor(visualizer, start, end) {
+                this.visualizer = visualizer;
+                this.start = start;
+                this.end = end;
+                this.queue = [start];
+                this.visited = new Set();
+                this.parent = new Map();
+                this.finished = false;
+                
+                visualizer.nodes[start].distance = 0;
+            }
+
+            step() {
+                if (this.queue.length === 0 || this.finished) {
+                    return { finished: true, message: '探索完了：パスが見つかりませんでした', path: [] };
+                }
+                
+                const current = this.queue.shift();
+                
+                // 現在のノードを処理中に設定
+                if (this.visualizer.nodes[current].state !== this.visualizer.NodeState.START) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.CURRENT;
+                }
+                
+                // 終了条件チェック
+                if (current === this.end) {
+                    this.finished = true;
+                    const path = this.reconstructPath();
+                    return { 
+                        finished: true, 
+                        message: `目標ノード ${this.end} に到達！パス長: ${path.length - 1}`, 
+                        path: path 
+                    };
+                }
+                
+                // 隣接ノードの処理
+                const neighbors = this.visualizer.graph.get(current) || [];
+                neighbors.forEach(neighbor => {
+                    const nodeId = neighbor.node;
+                    
+                    if (!this.visited.has(nodeId) && !this.queue.includes(nodeId)) {
+                        this.queue.push(nodeId);
+                        this.parent.set(nodeId, current);
+                        this.visualizer.nodes[nodeId].distance = this.visualizer.nodes[current].distance + 1;
+                        
+                        // キューに追加されたノードの状態更新
+                        if (this.visualizer.nodes[nodeId].state !== this.visualizer.NodeState.END) {
+                            this.visualizer.nodes[nodeId].state = this.visualizer.NodeState.QUEUE;
+                        }
+                    }
+                });
+                
+                // 現在のノードを訪問済みに設定
+                this.visited.add(current);
+                if (this.visualizer.nodes[current].state === this.visualizer.NodeState.CURRENT) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.VISITED;
+                }
+                
+                return { 
+                    finished: false, 
+                    message: `ノード ${current} を探索中。キュー: [${this.queue.join(', ')}]` 
+                };
+            }
+
+            reconstructPath() {
+                const path = [];
+                let current = this.end;
+                
+                while (current !== undefined) {
+                    path.unshift(current);
+                    current = this.parent.get(current);
+                }
+                
+                return path;
+            }
+
+            getVisitedCount() { return this.visited.size; }
+            getQueueSize() { return this.queue.length; }
+            getShortestDistance() { 
+                return this.visualizer.nodes[this.end].distance === Infinity ? '-' : this.visualizer.nodes[this.end].distance;
+            }
+            getProgress() { 
+                return Math.min(100, (this.visited.size / this.visualizer.nodes.length) * 100);
+            }
+        }
+
+        // 深さ優先探索アルゴリズム
+        class DFSAlgorithm {
+            constructor(visualizer, start, end) {
+                this.visualizer = visualizer;
+                this.start = start;
+                this.end = end;
+                this.stack = [start];
+                this.visited = new Set();
+                this.parent = new Map();
+                this.finished = false;
+                
+                visualizer.nodes[start].distance = 0;
+            }
+
+            step() {
+                if (this.stack.length === 0 || this.finished) {
+                    return { finished: true, message: '探索完了：パスが見つかりませんでした', path: [] };
+                }
+                
+                const current = this.stack.pop();
+                
+                if (this.visited.has(current)) {
+                    return this.step(); // スキップして次のステップ
+                }
+                
+                // 現在のノードを処理中に設定
+                if (this.visualizer.nodes[current].state !== this.visualizer.NodeState.START) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.CURRENT;
+                }
+                
+                // 終了条件チェック
+                if (current === this.end) {
+                    this.finished = true;
+                    const path = this.reconstructPath();
+                    return { 
+                        finished: true, 
+                        message: `目標ノード ${this.end} に到達！パス長: ${path.length - 1}`, 
+                        path: path 
+                    };
+                }
+                
+                // 現在のノードを訪問済みに追加
+                this.visited.add(current);
+                
+                // 隣接ノードをスタックに追加（逆順で追加して自然な順序に）
+                const neighbors = this.visualizer.graph.get(current) || [];
+                neighbors.reverse().forEach(neighbor => {
+                    const nodeId = neighbor.node;
+                    
+                    if (!this.visited.has(nodeId)) {
+                        this.stack.push(nodeId);
+                        this.parent.set(nodeId, current);
+                        this.visualizer.nodes[nodeId].distance = this.visualizer.nodes[current].distance + 1;
+                        
+                        // スタックに追加されたノードの状態更新
+                        if (this.visualizer.nodes[nodeId].state !== this.visualizer.NodeState.END) {
+                            this.visualizer.nodes[nodeId].state = this.visualizer.NodeState.QUEUE;
+                        }
+                    }
+                });
+                
+                // 現在のノードを訪問済みに設定
+                if (this.visualizer.nodes[current].state === this.visualizer.NodeState.CURRENT) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.VISITED;
+                }
+                
+                return { 
+                    finished: false, 
+                    message: `ノード ${current} を探索中。スタック: [${this.stack.join(', ')}]` 
+                };
+            }
+
+            reconstructPath() {
+                const path = [];
+                let current = this.end;
+                
+                while (current !== undefined) {
+                    path.unshift(current);
+                    current = this.parent.get(current);
+                }
+                
+                return path;
+            }
+
+            getVisitedCount() { return this.visited.size; }
+            getQueueSize() { return this.stack.length; }
+            getShortestDistance() { 
+                return this.visualizer.nodes[this.end].distance === Infinity ? '-' : this.visualizer.nodes[this.end].distance;
+            }
+            getProgress() { 
+                return Math.min(100, (this.visited.size / this.visualizer.nodes.length) * 100);
+            }
+        }
+
+        // ダイクストラアルゴリズム
+        class DijkstraAlgorithm {
+            constructor(visualizer, start, end) {
+                this.visualizer = visualizer;
+                this.start = start;
+                this.end = end;
+                this.pq = new PriorityQueue();
+                this.visited = new Set();
+                this.distances = new Map();
+                this.parent = new Map();
+                this.finished = false;
+                
+                // 初期化
+                visualizer.nodes.forEach(node => {
+                    this.distances.set(node.id, Infinity);
+                });
+                this.distances.set(start, 0);
+                visualizer.nodes[start].distance = 0;
+                
+                this.pq.enqueue(start, 0);
+            }
+
+            step() {
+                if (this.pq.isEmpty() || this.finished) {
+                    return { finished: true, message: '探索完了：パスが見つかりませんでした', path: [] };
+                }
+                
+                const current = this.pq.dequeue().element;
+                
+                if (this.visited.has(current)) {
+                    return this.step(); // スキップして次のステップ
+                }
+                
+                // 現在のノードを処理中に設定
+                if (this.visualizer.nodes[current].state !== this.visualizer.NodeState.START) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.CURRENT;
+                }
+                
+                // 終了条件チェック
+                if (current === this.end) {
+                    this.finished = true;
+                    const path = this.reconstructPath();
+                    const distance = this.distances.get(this.end);
+                    return { 
+                        finished: true, 
+                        message: `目標ノード ${this.end} に到達！最短距離: ${distance}`, 
+                        path: path 
+                    };
+                }
+                
+                // 現在のノードを訪問済みに追加
+                this.visited.add(current);
+                
+                // 隣接ノードの距離更新
+                const neighbors = this.visualizer.graph.get(current) || [];
+                neighbors.forEach(neighbor => {
+                    const nodeId = neighbor.node;
+                    const weight = neighbor.weight;
+                    
+                    if (!this.visited.has(nodeId)) {
+                        const newDistance = this.distances.get(current) + weight;
+                        
+                        if (newDistance < this.distances.get(nodeId)) {
+                            this.distances.set(nodeId, newDistance);
+                            this.visualizer.nodes[nodeId].distance = newDistance;
+                            this.parent.set(nodeId, current);
+                            this.pq.enqueue(nodeId, newDistance);
+                            
+                            // 優先度キューに追加されたノードの状態更新
+                            if (this.visualizer.nodes[nodeId].state !== this.visualizer.NodeState.END) {
+                                this.visualizer.nodes[nodeId].state = this.visualizer.NodeState.QUEUE;
+                            }
+                        }
+                    }
+                });
+                
+                // 現在のノードを訪問済みに設定
+                if (this.visualizer.nodes[current].state === this.visualizer.NodeState.CURRENT) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.VISITED;
+                }
+                
+                return { 
+                    finished: false, 
+                    message: `ノード ${current} を探索中。現在の距離: ${this.distances.get(current)}` 
+                };
+            }
+
+            reconstructPath() {
+                const path = [];
+                let current = this.end;
+                
+                while (current !== undefined) {
+                    path.unshift(current);
+                    current = this.parent.get(current);
+                }
+                
+                return path;
+            }
+
+            getVisitedCount() { return this.visited.size; }
+            getQueueSize() { return this.pq.size(); }
+            getShortestDistance() { 
+                const dist = this.distances.get(this.end);
+                return dist === Infinity ? '-' : dist;
+            }
+            getProgress() { 
+                return Math.min(100, (this.visited.size / this.visualizer.nodes.length) * 100);
+            }
+        }
+
+        // A*アルゴリズム
+        class AStarAlgorithm {
+            constructor(visualizer, start, end) {
+                this.visualizer = visualizer;
+                this.start = start;
+                this.end = end;
+                this.openSet = new PriorityQueue();
+                this.closedSet = new Set();
+                this.gScore = new Map();
+                this.fScore = new Map();
+                this.parent = new Map();
+                this.finished = false;
+                
+                // 初期化
+                visualizer.nodes.forEach(node => {
+                    this.gScore.set(node.id, Infinity);
+                    this.fScore.set(node.id, Infinity);
+                    node.heuristic = this.heuristic(node.id, end);
+                });
+                
+                this.gScore.set(start, 0);
+                this.fScore.set(start, this.heuristic(start, end));
+                visualizer.nodes[start].distance = 0;
+                
+                this.openSet.enqueue(start, this.fScore.get(start));
+            }
+
+            heuristic(a, b) {
+                // ユークリッド距離をヒューリスティックとして使用
+                const nodeA = this.visualizer.nodes[a];
+                const nodeB = this.visualizer.nodes[b];
+                return Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) / 50;
+            }
+
+            step() {
+                if (this.openSet.isEmpty() || this.finished) {
+                    return { finished: true, message: '探索完了：パスが見つかりませんでした', path: [] };
+                }
+                
+                const current = this.openSet.dequeue().element;
+                
+                // 現在のノードを処理中に設定
+                if (this.visualizer.nodes[current].state !== this.visualizer.NodeState.START) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.CURRENT;
+                }
+                
+                // 終了条件チェック
+                if (current === this.end) {
+                    this.finished = true;
+                    const path = this.reconstructPath();
+                    const distance = this.gScore.get(this.end);
+                    return { 
+                        finished: true, 
+                        message: `目標ノード ${this.end} に到達！最短距離: ${distance.toFixed(1)}`, 
+                        path: path 
+                    };
+                }
+                
+                // 現在のノードをクローズドセットに追加
+                this.closedSet.add(current);
+                
+                // 隣接ノードの処理
+                const neighbors = this.visualizer.graph.get(current) || [];
+                neighbors.forEach(neighbor => {
+                    const nodeId = neighbor.node;
+                    const weight = neighbor.weight;
+                    
+                    if (this.closedSet.has(nodeId)) return;
+                    
+                    const tentativeGScore = this.gScore.get(current) + weight;
+                    
+                    if (tentativeGScore < this.gScore.get(nodeId)) {
+                        this.parent.set(nodeId, current);
+                        this.gScore.set(nodeId, tentativeGScore);
+                        this.fScore.set(nodeId, tentativeGScore + this.heuristic(nodeId, this.end));
+                        this.visualizer.nodes[nodeId].distance = tentativeGScore;
+                        
+                        // オープンセットに追加
+                        this.openSet.enqueue(nodeId, this.fScore.get(nodeId));
+                        
+                        // ノードの状態更新
+                        if (this.visualizer.nodes[nodeId].state !== this.visualizer.NodeState.END) {
+                            this.visualizer.nodes[nodeId].state = this.visualizer.NodeState.QUEUE;
+                        }
+                    }
+                });
+                
+                // 現在のノードを訪問済みに設定
+                if (this.visualizer.nodes[current].state === this.visualizer.NodeState.CURRENT) {
+                    this.visualizer.nodes[current].state = this.visualizer.NodeState.VISITED;
+                }
+                
+                return { 
+                    finished: false, 
+                    message: `ノード ${current} を探索中。f値: ${this.fScore.get(current).toFixed(1)} (g: ${this.gScore.get(current).toFixed(1)}, h: ${this.heuristic(current, this.end).toFixed(1)})` 
+                };
+            }
+
+            reconstructPath() {
+                const path = [];
+                let current = this.end;
+                
+                while (current !== undefined) {
+                    path.unshift(current);
+                    current = this.parent.get(current);
+                }
+                
+                return path;
+            }
+
+            getVisitedCount() { return this.closedSet.size; }
+            getQueueSize() { return this.openSet.size(); }
+            getShortestDistance() { 
+                const dist = this.gScore.get(this.end);
+                return dist === Infinity ? '-' : dist.toFixed(1);
+            }
+            getProgress() { 
+                return Math.min(100, (this.closedSet.size / this.visualizer.nodes.length) * 100);
+            }
+        }
+
+        // 優先度キュークラス
+        class PriorityQueue {
+            constructor() {
+                this.items = [];
+            }
+
+            enqueue(element, priority) {
+                const queueElement = { element, priority };
+                let added = false;
+
+                for (let i = 0; i < this.items.length; i++) {
+                    if (queueElement.priority < this.items[i].priority) {
+                        this.items.splice(i, 0, queueElement);
+                        added = true;
+                        break;
+                    }
+                }
+
+                if (!added) {
+                    this.items.push(queueElement);
+                }
+            }
+
+            dequeue() {
+                return this.items.shift();
+            }
+
+            isEmpty() {
+                return this.items.length === 0;
+            }
+
+            size() {
+                return this.items.length;
+            }
+        }
+
+        // グローバル関数（HTML側から呼び出される）
+        let visualizer;
+
+        function generateRandomGraph() {
+            visualizer.generateRandomGraph();
+        }
+
+        function clearGraph() {
+            visualizer.clearGraph();
+        }
+
+        function parseGraphInput() {
+            visualizer.parseGraphInput();
+        }
+
+        function startAlgorithm() {
+            visualizer.startAlgorithm();
+        }
+
+        function pauseAlgorithm() {
+            visualizer.pauseAlgorithm();
+        }
+
+        function stepAlgorithm() {
+            visualizer.stepAlgorithm();
+        }
+
+        function resetAlgorithm() {
+            visualizer.resetAlgorithm();
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            visualizer = new GraphAlgorithmVisualizer();
+        });
+    </script>
+</body>
+</html>
